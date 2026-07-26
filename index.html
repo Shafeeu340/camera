@@ -1,0 +1,2339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, minimal-ui">
+  <title>BedDecor · Camera</title>
+  
+  <meta name="theme-color" content="#080b12">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BedDecor">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    html, body {
+      background: #000;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: -apple-system, 'SF Pro Display', 'Segoe UI', Roboto, system-ui, sans-serif;
+      touch-action: manipulation;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+    
+    .app {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .version-badge {
+      position: absolute;
+      bottom: 8px;
+      right: 14px;
+      font-size: 0.4rem;
+      color: rgba(255,255,255,0.1);
+      z-index: 20;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+    }
+    
+    /* === FULL SCREEN CAMERA === */
+    .camera-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      background: #000;
+    }
+    
+    .camera-preview {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+    
+    .camera-preview video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #000;
+    }
+    
+    .camera-preview .placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: rgba(255,255,255,0.3);
+      text-align: center;
+      z-index: 0;
+    }
+    .camera-preview .placeholder .big-icon { 
+      font-size: 4rem; 
+      opacity: 0.4;
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .camera-preview .placeholder .main-text { 
+      font-size: 0.9rem; 
+      font-weight: 500; 
+      color: rgba(255,255,255,0.4); 
+    }
+    .camera-preview .placeholder .sub-text { 
+      font-size: 0.7rem; 
+      color: rgba(255,255,255,0.25); 
+    }
+    
+    /* === PHOTO FLASH === */
+    .photo-flash {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 6;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: flashIn 0.15s ease;
+    }
+    .photo-flash.active {
+      display: flex;
+    }
+    .photo-flash .flash-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .photo-flash .flash-content .checkmark {
+      font-size: 4rem;
+      color: #4ade80;
+      animation: popIn 0.3s ease;
+    }
+    .photo-flash .flash-content .flash-text {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.8rem;
+      font-weight: 500;
+      opacity: 0;
+      animation: fadeText 0.4s ease 0.2s forwards;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+    @keyframes flashIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    @keyframes fadeText {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* === OVERLAY UI === */
+    .overlay-ui {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 14px 18px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 20%, transparent 65%, rgba(0,0,0,0.5) 100%);
+    }
+    .overlay-ui > * {
+      pointer-events: auto;
+    }
+    
+    /* === TOP BAR === */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 2px;
+      flex-shrink: 0;
+    }
+    .top-bar .left-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .top-bar .camera-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px 4px 10px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .top-bar .camera-status .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .top-bar .camera-status .dot.on { 
+      background: #4ade80; 
+      box-shadow: 0 0 12px rgba(74,222,128,0.5);
+    }
+    .top-bar .camera-status .dot.off { 
+      background: #f87171; 
+      box-shadow: 0 0 12px rgba(248,113,113,0.3);
+    }
+    .top-bar .camera-status .dot.checking { 
+      background: #facc15; 
+      animation: pulse-dot 1s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+    .top-bar .right-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    
+    .perm-btn-sm {
+      background: rgba(59,130,246,0.15);
+      border: 1px solid rgba(59,130,246,0.2);
+      border-radius: 30px;
+      padding: 4px 12px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: #93b4f8;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .perm-btn-sm:active { transform: scale(0.92); }
+    .perm-btn-sm.granted {
+      background: rgba(74,222,128,0.12);
+      border-color: rgba(74,222,128,0.2);
+      color: #4ade80;
+    }
+    .perm-btn-sm.denied {
+      background: rgba(248,113,113,0.12);
+      border-color: rgba(248,113,113,0.2);
+      color: #f87171;
+    }
+    .perm-btn-sm .icon { font-size: 0.8rem; }
+    
+    .settings-btn {
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .settings-btn:active { transform: scale(0.88); background: rgba(0,0,0,0.5); }
+    .settings-btn .badge-dot {
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 8px;
+      height: 8px;
+      background: #ff5e7c;
+      border-radius: 50%;
+      border: 2px solid #000;
+      display: none;
+      animation: pulse-badge 1.5s infinite;
+    }
+    @keyframes pulse-badge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    .settings-btn .badge-dot.show { display: block; }
+    
+    .install-btn {
+      background: rgba(74,222,128,0.12);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(74,222,128,0.15);
+      border-radius: 30px;
+      padding: 4px 12px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: #4ade80;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .install-btn:active { transform: scale(0.92); }
+    .install-btn.hidden { display: none; }
+    .install-btn .icon { font-size: 0.8rem; }
+    
+    /* === BOTTOM CONTROLS === */
+    .bottom-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    
+    /* === TICKET BOX === */
+    .ticket-section {
+      flex-shrink: 0;
+    }
+    .ticket-box {
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 6px 10px 8px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .ticket-box:focus-within {
+      border-color: rgba(255,94,124,0.2);
+    }
+    .ticket-box .label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .ticket-box .label-row .tag {
+      font-size: 0.45rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      background: rgba(255,255,255,0.05);
+      padding: 1px 10px;
+      border-radius: 30px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .ticket-box .label-row .hint {
+      font-size: 0.4rem;
+      color: rgba(255,255,255,0.25);
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ticket-box .label-row .hint .char-count {
+      background: rgba(0,0,0,0.3);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.3);
+    }
+    .ticket-box .label-row .hint .clear-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.2);
+      cursor: pointer;
+      font-size: 0.65rem;
+      padding: 2px 4px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .ticket-box .label-row .hint .clear-btn:active { 
+      color: #f87171; 
+      background: rgba(248,113,113,0.1);
+    }
+    .ticket-box input {
+      width: 100%;
+      background: rgba(0,0,0,0.2);
+      border: none;
+      border-radius: 14px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    .ticket-box input::placeholder { color: rgba(255,255,255,0.2); font-weight: 400; }
+    .ticket-box input:focus { box-shadow: 0 0 0 2px rgba(255,94,124,0.08); }
+    
+    /* === SUGGESTIONS === */
+    .suggestions-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+      padding: 0 2px;
+    }
+    .suggestions-header .label {
+      font-size: 0.45rem;
+      color: rgba(255,255,255,0.3);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .suggestions-header .label .count {
+      color: rgba(255,255,255,0.2);
+      font-weight: 600;
+    }
+    .suggestions-header .add-btn {
+      background: none;
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 1px 10px;
+      font-size: 0.45rem;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .suggestions-header .add-btn:active {
+      background: rgba(255,94,124,0.1);
+      border-color: rgba(255,94,124,0.2);
+      color: #ff8aa3;
+    }
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+      padding: 0 2px;
+      min-height: 22px;
+      max-height: 50px;
+      overflow-y: auto;
+    }
+    .suggestions::-webkit-scrollbar {
+      width: 2px;
+    }
+    .suggestions::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+    .suggestions::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+    .suggestion-chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 30px;
+      padding: 2px 10px;
+      font-size: 0.5rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.5);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      animation: chipIn 0.3s ease;
+    }
+    @keyframes chipIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .suggestion-chip:active { transform: scale(0.92); }
+    .suggestion-chip.selected {
+      background: rgba(255,94,124,0.12);
+      border-color: rgba(255,94,124,0.2);
+      color: #ff8aa3;
+    }
+    .suggestion-chip .chip-text { max-width: 80px; overflow: hidden; text-overflow: ellipsis; }
+    .suggestion-chip .chip-check {
+      font-size: 0.5rem;
+      opacity: 0;
+      transition: all 0.2s ease;
+    }
+    .suggestion-chip.selected .chip-check {
+      opacity: 1;
+    }
+    .empty-suggestions {
+      color: rgba(255,255,255,0.15);
+      font-size: 0.5rem;
+      padding: 4px 0;
+      width: 100%;
+      text-align: center;
+    }
+    
+    /* === CAMERA CONTROLS === */
+    .camera-controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+      padding: 4px 0;
+    }
+    .btn-capture {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 3.5px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .btn-capture:active {
+      transform: scale(0.9);
+      background: rgba(255,255,255,0.1);
+    }
+    .btn-capture:disabled {
+      opacity: 0.3;
+      transform: scale(0.95);
+      cursor: not-allowed;
+    }
+    .btn-capture .inner-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff5e7c, #e94a6a);
+      transition: all 0.3s ease;
+      box-shadow: 0 0 30px rgba(255,94,124,0.15);
+    }
+    .btn-capture:active .inner-circle { transform: scale(0.85); }
+    .btn-capture.has-photos {
+      border-color: rgba(74,222,128,0.2);
+    }
+    .btn-capture.has-photos .inner-circle {
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      box-shadow: 0 0 30px rgba(74,222,128,0.15);
+    }
+    .btn-capture .ripple {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+      animation: rippleAnim 1.5s ease-out infinite;
+      width: 100%;
+      height: 100%;
+    }
+    @keyframes rippleAnim {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    
+    .btn-action {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 0.6rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      touch-action: manipulation;
+      letter-spacing: 0.3px;
+      background: rgba(255,255,255,0.05);
+      color: rgba(255,255,255,0.6);
+      border: 1px solid rgba(255,255,255,0.05);
+      flex: 1;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      backdrop-filter: blur(4px);
+    }
+    .btn-action:active {
+      transform: scale(0.95);
+      background: rgba(255,255,255,0.08);
+    }
+    .btn-action:disabled {
+      opacity: 0.3;
+      transform: scale(0.95);
+      cursor: not-allowed;
+    }
+    .btn-action.whatsapp {
+      background: rgba(37,211,102,0.12);
+      border: 1px solid rgba(37,211,102,0.15);
+      color: #4ade80;
+      font-weight: 700;
+    }
+    .btn-action.whatsapp:active { background: rgba(37,211,102,0.2); }
+    .btn-action.whatsapp:disabled {
+      background: rgba(37,211,102,0.05);
+      border-color: rgba(37,211,102,0.05);
+      color: rgba(74,222,128,0.2);
+    }
+    .btn-action.danger {
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.08);
+      color: #f87171;
+    }
+    .btn-action.danger:active { background: rgba(248,113,113,0.15); }
+    .btn-action.danger:disabled {
+      background: rgba(248,113,113,0.03);
+      border-color: rgba(248,113,113,0.03);
+      color: rgba(248,113,113,0.2);
+    }
+    .btn-action .icon { font-size: 0.7rem; }
+    
+    /* === THUMBNAILS === */
+    .thumbnails-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .thumbnail {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 2px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .thumbnail:active { transform: scale(0.9); }
+    .thumbnail.active {
+      border-color: #ff5e7c;
+      box-shadow: 0 0 20px rgba(255,94,124,0.12);
+      transform: scale(1.05);
+    }
+    .thumbnail.has-image { 
+      border-color: rgba(74,222,128,0.2); 
+    }
+    .thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      animation: thumbIn 0.3s ease;
+    }
+    @keyframes thumbIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .thumbnail .thumb-placeholder { 
+      font-size: 1.2rem; 
+      opacity: 0.2; 
+      color: rgba(255,255,255,0.3); 
+    }
+    .thumbnail .thumb-number {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      font-size: 0.4rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.6);
+      padding: 1px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .thumbnail .thumb-label {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.35rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.2);
+      background: rgba(0,0,0,0.4);
+      padding: 1px 6px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    
+    /* === ORIENTATION CONTROLS === */
+    .orientation-controls {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .btn-orientation {
+      padding: 2px 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(4px);
+      color: rgba(255,255,255,0.3);
+      font-size: 0.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-orientation:active { transform: scale(0.92); }
+    .btn-orientation.active {
+      background: rgba(255,94,124,0.1);
+      border-color: rgba(255,94,124,0.2);
+      color: #ff8aa3;
+      box-shadow: 0 0 16px rgba(255,94,124,0.05);
+    }
+    .btn-orientation .icon { font-size: 0.6rem; }
+    
+    /* === STATUS BAR === */
+    .status-bar {
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      border-radius: 30px;
+      padding: 4px 12px;
+      font-size: 0.55rem;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-weight: 450;
+      min-height: 26px;
+      flex-shrink: 0;
+      margin-top: 6px;
+      transition: all 0.3s ease;
+    }
+    .status-bar .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .status-bar .status-dot.green { background: #4ade80; box-shadow: 0 0 8px rgba(74,222,128,0.3); }
+    .status-bar .status-dot.yellow { background: #facc15; box-shadow: 0 0 8px rgba(250,204,21,0.3); }
+    .status-bar .status-dot.red { background: #f87171; box-shadow: 0 0 8px rgba(248,113,113,0.3); }
+    .status-bar .status-dot.gray { background: rgba(255,255,255,0.1); }
+    
+    /* === FULLSCREEN IMAGE VIEW === */
+    .image-view-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.95);
+      backdrop-filter: blur(30px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      padding: 20px;
+      animation: fadeIn 0.35s ease;
+    }
+    .image-view-modal.active { display: flex; }
+    .image-view-modal .modal-content {
+      max-width: 600px;
+      width: 100%;
+      position: relative;
+      animation: zoomInModal 0.35s ease;
+    }
+    .image-view-modal .modal-content img {
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.9);
+      background: #000;
+    }
+    .image-view-modal .modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.6);
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.2rem;
+      color: #fff;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .image-view-modal .modal-close:active { 
+      transform: scale(0.88); 
+      background: rgba(0,0,0,0.8);
+    }
+    .image-view-modal .photo-info {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      padding: 6px 16px;
+      border-radius: 20px;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.65rem;
+      border: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap;
+    }
+    
+    /* === MODALS === */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(20px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-overlay .modal-content {
+      background: rgba(20,25,40,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.06);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      animation: zoomInModal 0.3s ease;
+    }
+    @keyframes zoomInModal {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-overlay .modal-content .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .modal-overlay .modal-content .modal-header h3 {
+      color: rgba(255,255,255,0.9);
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-overlay .modal-content .modal-header .close-modal {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.3);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .modal-overlay .modal-content .modal-header .close-modal:active { 
+      color: #f87171; 
+      background: rgba(248,113,113,0.1);
+    }
+    .modal-overlay .modal-content .settings-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .modal-overlay .modal-content .settings-list::-webkit-scrollbar {
+      width: 3px;
+    }
+    .modal-overlay .modal-content .settings-list::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+    }
+    .modal-overlay .modal-content .settings-list::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+    }
+    
+    .settings-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      margin-bottom: 4px;
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: all 0.25s ease;
+    }
+    .settings-item .item-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(0,0,0,0.3);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .settings-item .item-checkbox:checked {
+      background: #ff5e7c;
+      border-color: #ff5e7c;
+    }
+    .settings-item .item-checkbox:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .settings-item .item-text {
+      flex: 1;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.7);
+      word-break: break-word;
+    }
+    .settings-item .item-actions {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .settings-item .item-actions button {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.3);
+      cursor: pointer;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+    }
+    .settings-item .item-actions .edit-btn:active { 
+      color: #facc15; 
+      background: rgba(250,204,21,0.1);
+    }
+    .settings-item .item-actions .delete-btn:active { 
+      color: #f87171; 
+      background: rgba(248,113,113,0.1);
+    }
+    .settings-item.editing { 
+      border-color: rgba(250,204,21,0.3); 
+      background: rgba(255,255,255,0.05);
+    }
+    .settings-item .edit-input {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.9);
+      outline: none;
+    }
+    .settings-item .edit-input:focus { border-color: rgba(250,204,21,0.3); }
+    .settings-item .edit-save-btn {
+      background: rgba(74,222,128,0.12);
+      border: 1px solid #4ade80;
+      color: #4ade80;
+      padding: 2px 12px;
+      border-radius: 12px;
+      font-size: 0.6rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .settings-item .edit-save-btn:active { transform: scale(0.92); }
+    .settings-empty {
+      color: rgba(255,255,255,0.2);
+      text-align: center;
+      padding: 20px 10px;
+      font-size: 0.75rem;
+    }
+    
+    .modal-overlay .modal-content .settings-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      flex-wrap: wrap;
+    }
+    .modal-overlay .modal-content .settings-actions button {
+      flex: 1;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 18px;
+      font-weight: 600;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      min-width: 60px;
+    }
+    .modal-overlay .modal-content .settings-actions button:active { transform: scale(0.95); }
+    .modal-overlay .modal-content .settings-actions .btn-delete-selected {
+      background: rgba(168,50,66,0.25);
+      color: #f87171;
+      border: 1px solid rgba(168,50,66,0.15);
+    }
+    .modal-overlay .modal-content .settings-actions .btn-delete-selected:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .modal-overlay .modal-content .settings-actions .btn-clear-all {
+      background: rgba(122,26,42,0.25);
+      color: #f87171;
+      border: 1px solid rgba(122,26,42,0.15);
+    }
+    .modal-overlay .modal-content .settings-actions .btn-done {
+      background: rgba(59,130,246,0.15);
+      color: #93b4f8;
+      border: 1px solid rgba(59,130,246,0.1);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @media (max-width: 420px) {
+      .overlay-ui { padding: 10px 10px 14px; }
+      .btn-capture { width: 60px; height: 60px; }
+      .btn-capture .inner-circle { width: 48px; height: 48px; }
+      .thumbnail { width: 44px; height: 44px; }
+      .btn-action { font-size: 0.55rem; min-height: 32px; padding: 6px 10px; }
+      .ticket-box input { font-size: 0.7rem; padding: 4px 10px; }
+      .suggestion-chip { font-size: 0.45rem; padding: 2px 8px; }
+      .suggestion-chip .chip-text { max-width: 60px; }
+    }
+    @media (max-width: 360px) {
+      .overlay-ui { padding: 8px 8px 12px; }
+      .btn-capture { width: 52px; height: 52px; }
+      .btn-capture .inner-circle { width: 42px; height: 42px; }
+      .thumbnail { width: 38px; height: 38px; }
+      .btn-action { font-size: 0.5rem; min-height: 28px; padding: 4px 8px; }
+      .suggestions { max-height: 35px; }
+      .suggestion-chip { font-size: 0.4rem; padding: 1px 6px; }
+      .suggestion-chip .chip-text { max-width: 40px; }
+    }
+    @media (max-height: 700px) {
+      .overlay-ui { padding: 8px 10px 12px; }
+      .top-bar { padding-bottom: 4px; }
+      .ticket-box { padding: 4px 8px 6px; }
+      .ticket-box input { padding: 3px 10px; font-size: 0.65rem; }
+      .suggestions { max-height: 35px; }
+      .camera-controls { padding: 2px 0; }
+      .btn-capture { width: 52px; height: 52px; }
+      .btn-capture .inner-circle { width: 42px; height: 42px; }
+      .thumbnail { width: 38px; height: 38px; }
+      .btn-action { font-size: 0.5rem; min-height: 28px; padding: 4px 8px; }
+      .status-bar { min-height: 22px; font-size: 0.5rem; padding: 3px 10px; margin-top: 4px; }
+      .orientation-controls { margin-top: -4px; }
+      .btn-orientation { font-size: 0.45rem; padding: 1px 8px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <span class="version-badge" id="versionBadge">v1.0.3</span>
+  
+  <!-- FULL SCREEN CAMERA -->
+  <div class="camera-container">
+    <div class="camera-preview" id="cameraPreview">
+      <div class="placeholder" id="mainPlaceholder">
+        <span class="big-icon">📷</span>
+        <span class="main-text">Camera Starting...</span>
+        <span class="sub-text">Please allow camera access</span>
+      </div>
+      <video id="liveVideo" autoplay playsinline muted webkit-playsinline style="display:none;"></video>
+      <img id="mainPreviewImg" style="display:none;" alt="Preview">
+      
+      <!-- PHOTO FLASH -->
+      <div class="photo-flash" id="photoFlash">
+        <div class="flash-content">
+          <span class="checkmark">✅</span>
+          <span class="flash-text">Photo Saved</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- OVERLAY UI -->
+  <div class="overlay-ui">
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div class="left-group">
+        <div class="camera-status">
+          <span class="dot off" id="cameraDot"></span>
+          <span id="cameraStatusText">Off</span>
+        </div>
+      </div>
+      <div class="right-group">
+        <button class="install-btn hidden" id="installBtn"><span class="icon">📲</span> Install</button>
+        <button class="settings-btn" id="settingsBtn" title="Manage Suggestions">⚙️<span class="badge-dot" id="settingsBadge"></span></button>
+        <button class="perm-btn-sm" id="permissionBtn"><span class="icon">📷</span><span id="permText">Allow Camera</span></button>
+      </div>
+    </div>
+
+    <!-- BOTTOM CONTROLS -->
+    <div class="bottom-controls">
+      <!-- TICKET BOX -->
+      <div class="ticket-section">
+        <div class="ticket-box">
+          <div class="label-row">
+            <span class="tag">📝 Message</span>
+            <span class="hint">
+              <span class="char-count" id="charCount">0</span>
+              <button class="clear-btn" id="clearTextBtn" title="Clear text">✕</button>
+            </span>
+          </div>
+          <input type="text" id="ticketText" placeholder="Type your message..." value="" autocomplete="off">
+          
+          <div class="suggestions-header">
+            <span class="label">💡 Suggestions <span class="count" id="selectedCount">(0 selected)</span></span>
+            <button class="add-btn" id="addSuggestionBtn">➕ Add</button>
+          </div>
+          <div class="suggestions" id="suggestionsContainer"></div>
+        </div>
+      </div>
+
+      <!-- ORIENTATION CONTROLS -->
+      <div class="orientation-controls">
+        <button class="btn-orientation active" id="orientLandscape" data-mode="landscape">
+          <span class="icon">📱</span> Landscape
+        </button>
+        <button class="btn-orientation" id="orientPortrait" data-mode="portrait">
+          <span class="icon">📱</span> Portrait
+        </button>
+      </div>
+
+      <!-- CAMERA CONTROLS -->
+      <div class="camera-controls">
+        <button class="btn-action danger" id="retakeBtn" disabled><span class="icon">🔄</span> Retake</button>
+        <button class="btn-capture" id="captureBtn">
+          <span class="ripple"></span>
+          <div class="inner-circle"></div>
+        </button>
+        <button class="btn-action whatsapp" id="sendBtn" disabled><span class="icon">💬</span> Send</button>
+      </div>
+
+      <!-- THUMBNAILS -->
+      <div class="thumbnails-row">
+        <div class="thumbnail" id="thumb0" data-index="0">
+          <span class="thumb-placeholder">📷</span>
+          <span class="thumb-number">1</span>
+          <span class="thumb-label">Empty</span>
+        </div>
+        <div class="thumbnail" id="thumb1" data-index="1">
+          <span class="thumb-placeholder">📷</span>
+          <span class="thumb-number">2</span>
+          <span class="thumb-label">Empty</span>
+        </div>
+      </div>
+
+      <!-- STATUS -->
+      <div class="status-bar">
+        <span class="status-dot gray" id="statusDot"></span>
+        <span id="statusText">Initializing camera...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN IMAGE VIEW -->
+<div class="image-view-modal" id="imageViewModal">
+  <div class="modal-content">
+    <button class="modal-close" id="imageViewClose">✕</button>
+    <img id="imageViewImg" src="" alt="Full view">
+    <span class="photo-info" id="photoInfo">📸 Photo</span>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="addSuggestionModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>➕ Add Suggestion</h3>
+      <button class="close-modal" id="cancelAddBtn">✕</button>
+    </div>
+    <input type="text" id="newSuggestionInput" placeholder="Enter suggestion text..." maxlength="50" autocomplete="off" style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:16px; padding:10px 14px; font-size:0.9rem; color:rgba(255,255,255,0.9); outline:none; margin-bottom:12px;">
+    <div style="display:flex; gap:10px;">
+      <button class="btn-done" id="confirmAddBtn" style="flex:1; padding:10px; border:none; border-radius:20px; font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s ease; background:rgba(255,94,124,0.15); color:#ff8aa3; border:1px solid rgba(255,94,124,0.1);">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>⚙️ Manage Suggestions</h3>
+      <button class="close-modal" id="closeSettingsBtn">✕</button>
+    </div>
+    <div class="settings-list" id="settingsList"></div>
+    <div class="settings-actions">
+      <button class="btn-delete-selected" id="deleteSelectedBtn" disabled>🗑️ Delete Selected</button>
+      <button class="btn-clear-all" id="clearAllDataBtn">🧹 Clear All Data</button>
+      <button class="btn-done" id="doneSettingsBtn">✅ Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="clearDataModal">
+  <div class="modal-content" style="text-align:center; max-width:340px;">
+    <div style="font-size:3rem; margin-bottom:10px;">⚠️</div>
+    <h3 style="color:#f87171; font-size:1.1rem; margin-bottom:6px;">Clear All Data?</h3>
+    <p style="color:rgba(255,255,255,0.5); font-size:0.85rem; line-height:1.5; margin-bottom:16px;">This will permanently delete all your suggestions and reset the app to default.</p>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-cancel-clear" id="cancelClearBtn" style="flex:1; padding:10px; border:none; border-radius:20px; font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s ease; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.4);">Cancel</button>
+      <button class="btn-confirm-clear" id="confirmClearBtn" style="flex:1; padding:10px; border:none; border-radius:20px; font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s ease; background:rgba(220,38,38,0.15); color:#f87171; border:1px solid rgba(220,38,38,0.1);">Yes, Clear</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    "use strict";
+
+    var APP_VERSION = '1.0.3';
+    var STORAGE_KEY = 'beddecor_suggestions';
+    var VERSION_KEY = 'beddecor_version';
+
+    var state = {
+      photos: [
+        { dataUrl: null },
+        { dataUrl: null }
+      ],
+      cameraReady: false,
+      selectedIndex: 0,
+      suggestions: [],
+      selectedSuggestions: [],
+      editingIndex: -1,
+      videoStream: null,
+      isVideoRunning: false,
+      isInitializing: false,
+      isSending: false,
+      orientation: 'landscape'
+    };
+
+    // DOM REFS
+    var mainPreviewImg = document.getElementById('mainPreviewImg');
+    var mainPlaceholder = document.getElementById('mainPlaceholder');
+    var cameraPreview = document.getElementById('cameraPreview');
+    var liveVideo = document.getElementById('liveVideo');
+    var photoFlash = document.getElementById('photoFlash');
+    var thumbnails = [document.getElementById('thumb0'), document.getElementById('thumb1')];
+    var ticketInput = document.getElementById('ticketText');
+    var charCount = document.getElementById('charCount');
+    var clearTextBtn = document.getElementById('clearTextBtn');
+    var suggestionsContainer = document.getElementById('suggestionsContainer');
+    var selectedCount = document.getElementById('selectedCount');
+    var addSuggestionBtn = document.getElementById('addSuggestionBtn');
+    var addModal = document.getElementById('addSuggestionModal');
+    var newSuggestionInput = document.getElementById('newSuggestionInput');
+    var confirmAddBtn = document.getElementById('confirmAddBtn');
+    var cancelAddBtn = document.getElementById('cancelAddBtn');
+    var statusText = document.getElementById('statusText');
+    var statusDot = document.getElementById('statusDot');
+    var captureBtn = document.getElementById('captureBtn');
+    var retakeBtn = document.getElementById('retakeBtn');
+    var sendBtn = document.getElementById('sendBtn');
+    var imageViewModal = document.getElementById('imageViewModal');
+    var imageViewImg = document.getElementById('imageViewImg');
+    var imageViewClose = document.getElementById('imageViewClose');
+    var photoInfo = document.getElementById('photoInfo');
+    var permBtn = document.getElementById('permissionBtn');
+    var permText = document.getElementById('permText');
+    var cameraDot = document.getElementById('cameraDot');
+    var cameraStatusText = document.getElementById('cameraStatusText');
+    var settingsBtn = document.getElementById('settingsBtn');
+    var settingsModal = document.getElementById('settingsModal');
+    var settingsList = document.getElementById('settingsList');
+    var closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    var doneSettingsBtn = document.getElementById('doneSettingsBtn');
+    var deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    var clearAllDataBtn = document.getElementById('clearAllDataBtn');
+    var clearDataModal = document.getElementById('clearDataModal');
+    var cancelClearBtn = document.getElementById('cancelClearBtn');
+    var confirmClearBtn = document.getElementById('confirmClearBtn');
+    var settingsBadge = document.getElementById('settingsBadge');
+    var versionBadge = document.getElementById('versionBadge');
+    var installBtn = document.getElementById('installBtn');
+    var orientLandscape = document.getElementById('orientLandscape');
+    var orientPortrait = document.getElementById('orientPortrait');
+
+    // ============================================================
+    // VERSION & STORAGE
+    // ============================================================
+    function checkVersion() {
+      try {
+        var savedVersion = localStorage.getItem(VERSION_KEY);
+        if (savedVersion !== APP_VERSION) {
+          localStorage.setItem(VERSION_KEY, APP_VERSION);
+        }
+      } catch (e) {}
+      versionBadge.textContent = 'v' + APP_VERSION;
+    }
+
+    function loadSuggestions() {
+      try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          var parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            state.suggestions = parsed;
+            return;
+          }
+        }
+      } catch (e) {}
+      state.suggestions = [];
+    }
+
+    function saveSuggestions() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.suggestions));
+        updateSettingsBadge();
+      } catch (e) {}
+    }
+
+    function clearAllData() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.setItem(VERSION_KEY, APP_VERSION);
+        state.suggestions = [];
+        state.selectedSuggestions = [];
+        ticketInput.value = '';
+        updateCharCount();
+        renderSuggestions();
+        renderSettings();
+        setStatus('🧹 All data cleared!', 'info');
+        updateSettingsBadge();
+      } catch (e) {}
+    }
+
+    function updateSettingsBadge() {
+      if (state.suggestions.length > 0) {
+        settingsBadge.classList.add('show');
+      } else {
+        settingsBadge.classList.remove('show');
+      }
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function setStatus(msg, type) {
+      type = type || 'info';
+      statusText.textContent = msg;
+      statusDot.className = 'status-dot';
+      if (type === 'success') statusDot.classList.add('green');
+      else if (type === 'warning') statusDot.classList.add('yellow');
+      else if (type === 'error') statusDot.classList.add('red');
+      else statusDot.classList.add('gray');
+    }
+
+    function setCameraStatus(ready, msg) {
+      state.cameraReady = ready;
+      cameraDot.className = 'dot' + (ready ? ' on' : ' off');
+      cameraStatusText.textContent = msg || (ready ? 'Ready' : 'Off');
+      updateButtons();
+    }
+
+    function updateButtons() {
+      var hasPhotos = state.photos.some(function(p) { return p.dataUrl; });
+      var allFilled = state.photos.every(function(p) { return p.dataUrl; });
+      captureBtn.disabled = !state.cameraReady || allFilled || state.isInitializing;
+      captureBtn.classList.toggle('has-photos', hasPhotos);
+      retakeBtn.disabled = !hasPhotos || !state.cameraReady;
+      sendBtn.disabled = !hasPhotos || !state.cameraReady || state.isSending;
+    }
+
+    function updateCharCount() {
+      charCount.textContent = ticketInput.value.length;
+    }
+
+    // ============================================================
+    // ORIENTATION
+    // ============================================================
+    function setOrientation(mode) {
+      state.orientation = mode;
+      orientLandscape.classList.toggle('active', mode === 'landscape');
+      orientPortrait.classList.toggle('active', mode === 'portrait');
+      restartCameraWithOrientation(mode);
+    }
+    
+    function restartCameraWithOrientation(mode) {
+      if (state.isVideoRunning) {
+        stopCamera();
+        setTimeout(function() {
+          startCameraWithOrientation(mode);
+        }, 300);
+      } else {
+        startCameraWithOrientation(mode);
+      }
+    }
+    
+    function startCameraWithOrientation(mode) {
+      if (state.isVideoRunning) return;
+      if (state.isInitializing) return;
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setStatus('❌ Camera not supported', 'error');
+        return;
+      }
+
+      var isLandscape = (mode === 'landscape');
+      var width = isLandscape ? 1920 : 1080;
+      var height = isLandscape ? 1080 : 1920;
+
+      state.isInitializing = true;
+      setStatus('📷 Starting camera...', 'warning');
+
+      navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: width },
+          height: { ideal: height },
+          aspectRatio: { ideal: isLandscape ? 16/9 : 9/16 }
+        },
+        audio: false
+      })
+      .then(function(stream) {
+        state.videoStream = stream;
+        liveVideo.srcObject = stream;
+        liveVideo.setAttribute('playsinline', 'true');
+        liveVideo.setAttribute('webkit-playsinline', 'true');
+        liveVideo.muted = true;
+        liveVideo.style.display = 'block';
+        liveVideo.style.width = '100%';
+        liveVideo.style.height = '100%';
+        liveVideo.style.objectFit = 'cover';
+        liveVideo.style.background = '#000';
+        
+        mainPlaceholder.style.display = 'none';
+        mainPreviewImg.style.display = 'none';
+        liveVideo.style.display = 'block';
+        
+        return new Promise(function(resolve) {
+          if (liveVideo.readyState >= 2) {
+            resolve();
+          } else {
+            liveVideo.addEventListener('loadeddata', resolve, { once: true });
+            setTimeout(resolve, 3000);
+          }
+        });
+      })
+      .then(function() {
+        return liveVideo.play().catch(function() {
+          setStatus('📱 Tap the screen to start camera', 'warning');
+          return Promise.resolve();
+        });
+      })
+      .then(function() {
+        state.isVideoRunning = true;
+        state.cameraReady = true;
+        setCameraStatus(true, 'Live');
+        setStatus('📸 Camera ready! Tap capture.', 'success');
+        permBtn.className = 'perm-btn-sm granted';
+        permText.textContent = '✅ Ready';
+        state.isInitializing = false;
+        renderMainView();
+      })
+      .catch(function(error) {
+        console.error('Camera error:', error);
+        state.isInitializing = false;
+        
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          setStatus('⚠️ Camera denied. Tap "Allow Camera".', 'error');
+          permBtn.className = 'perm-btn-sm denied';
+          permText.textContent = '⚠️ Allow';
+        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+          setStatus('❌ No camera found on this device', 'error');
+          permBtn.className = 'perm-btn-sm denied';
+          permText.textContent = '❌ No Camera';
+        } else {
+          setStatus('❌ Camera error: ' + error.message, 'error');
+          permBtn.className = 'perm-btn-sm denied';
+          permText.textContent = '❌ Error';
+        }
+      });
+    }
+
+    orientLandscape.addEventListener('click', function() {
+      if (state.orientation === 'landscape') return;
+      setOrientation('landscape');
+    });
+
+    orientPortrait.addEventListener('click', function() {
+      if (state.orientation === 'portrait') return;
+      setOrientation('portrait');
+    });
+
+    // ============================================================
+    // CAMERA
+    // ============================================================
+    function startCamera() {
+      startCameraWithOrientation(state.orientation || 'landscape');
+    }
+
+    function stopCamera() {
+      if (state.videoStream) {
+        state.videoStream.getTracks().forEach(function(t) {
+          try { t.stop(); } catch (e) {}
+        });
+        state.videoStream = null;
+      }
+      state.isVideoRunning = false;
+      liveVideo.style.display = 'none';
+      liveVideo.srcObject = null;
+    }
+
+    permBtn.addEventListener('click', function() {
+      if (this.disabled) return;
+      if (state.isVideoRunning) {
+        setStatus('📸 Camera already running', 'success');
+        return;
+      }
+      startCamera();
+    });
+
+    // ============================================================
+    // SUGGESTIONS
+    // ============================================================
+    function renderSuggestions() {
+      suggestionsContainer.innerHTML = '';
+      
+      if (state.suggestions.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-suggestions';
+        empty.textContent = 'No suggestions yet. Tap "➕ Add" to create one.';
+        suggestionsContainer.appendChild(empty);
+        return;
+      }
+
+      state.suggestions.forEach(function(text) {
+        var chip = document.createElement('div');
+        chip.className = 'suggestion-chip';
+        var isSelected = state.selectedSuggestions.indexOf(text) !== -1;
+        if (isSelected) {
+          chip.classList.add('selected');
+        }
+        chip.innerHTML = '<span class="chip-text">' + text + '</span><span class="chip-check">✓</span>';
+        chip.addEventListener('click', function(e) {
+          e.preventDefault();
+          toggleSuggestion(text);
+        });
+        suggestionsContainer.appendChild(chip);
+      });
+      updateSelectedCount();
+      updateMessageFromSuggestions();
+    }
+
+    function updateSelectedCount() {
+      selectedCount.textContent = '(' + state.selectedSuggestions.length + ' selected)';
+    }
+
+    function toggleSuggestion(text) {
+      var index = state.selectedSuggestions.indexOf(text);
+      if (index === -1) {
+        state.selectedSuggestions.push(text);
+      } else {
+        state.selectedSuggestions.splice(index, 1);
+      }
+      renderSuggestions();
+    }
+
+    function updateMessageFromSuggestions() {
+      if (state.selectedSuggestions.length > 0) {
+        var combined = state.selectedSuggestions.join(' · ');
+        if (ticketInput.value !== combined) {
+          ticketInput.value = combined;
+          updateCharCount();
+        }
+      }
+    }
+
+    // ============================================================
+    // SETTINGS
+    // ============================================================
+    function renderSettings() {
+      settingsList.innerHTML = '';
+      
+      if (state.suggestions.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'settings-empty';
+        empty.textContent = 'No suggestions yet. Add some from the main screen.';
+        settingsList.appendChild(empty);
+        deleteSelectedBtn.disabled = true;
+        return;
+      }
+      
+      state.suggestions.forEach(function(text, index) {
+        var item = document.createElement('div');
+        item.className = 'settings-item';
+        if (state.editingIndex === index) {
+          item.classList.add('editing');
+        }
+        
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'item-checkbox';
+        checkbox.dataset.index = index;
+        checkbox.addEventListener('change', updateDeleteButton);
+        checkbox.addEventListener('touchstart', function(e) {
+          e.stopPropagation();
+        });
+        
+        var textSpan = document.createElement('span');
+        textSpan.className = 'item-text';
+        textSpan.textContent = text;
+        
+        var actions = document.createElement('div');
+        actions.className = 'item-actions';
+        
+        if (state.editingIndex === index) {
+          var editInput = document.createElement('input');
+          editInput.type = 'text';
+          editInput.className = 'edit-input';
+          editInput.value = text;
+          editInput.maxLength = 50;
+          editInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') saveEdit(index, editInput.value);
+            if (e.key === 'Escape') { state.editingIndex = -1; renderSettings(); }
+          });
+          
+          var saveBtn = document.createElement('button');
+          saveBtn.className = 'edit-save-btn';
+          saveBtn.textContent = 'Save';
+          saveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            saveEdit(index, editInput.value);
+          });
+          
+          item.appendChild(editInput);
+          item.appendChild(saveBtn);
+          setTimeout(function() { editInput.focus(); }, 100);
+        } else {
+          var editBtn = document.createElement('button');
+          editBtn.className = 'edit-btn';
+          editBtn.textContent = '✏️';
+          editBtn.title = 'Edit';
+          editBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            state.editingIndex = index;
+            renderSettings();
+          });
+          
+          var deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.textContent = '🗑️';
+          deleteBtn.title = 'Delete';
+          deleteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (confirm('Remove "' + text + '" from suggestions?')) {
+              deleteSuggestion(index);
+            }
+          });
+          
+          actions.appendChild(editBtn);
+          actions.appendChild(deleteBtn);
+          item.appendChild(checkbox);
+          item.appendChild(textSpan);
+          item.appendChild(actions);
+        }
+        
+        settingsList.appendChild(item);
+      });
+      
+      updateDeleteButton();
+    }
+
+    function saveEdit(index, newText) {
+      var trimmed = newText.trim();
+      if (!trimmed) {
+        setStatus('⚠️ Please enter a valid suggestion', 'warning');
+        return;
+      }
+      var oldText = state.suggestions[index];
+      if (trimmed !== oldText && state.suggestions.indexOf(trimmed) !== -1) {
+        setStatus('⚠️ Suggestion already exists', 'warning');
+        return;
+      }
+      state.suggestions[index] = trimmed;
+      var selIndex = state.selectedSuggestions.indexOf(oldText);
+      if (selIndex !== -1) {
+        state.selectedSuggestions[selIndex] = trimmed;
+      }
+      state.editingIndex = -1;
+      saveSuggestions();
+      renderSettings();
+      renderSuggestions();
+      setStatus('✅ Updated suggestion', 'success');
+    }
+
+    function deleteSuggestion(index) {
+      var text = state.suggestions[index];
+      state.suggestions.splice(index, 1);
+      var selIndex = state.selectedSuggestions.indexOf(text);
+      if (selIndex !== -1) {
+        state.selectedSuggestions.splice(selIndex, 1);
+      }
+      if (state.editingIndex === index) state.editingIndex = -1;
+      saveSuggestions();
+      renderSettings();
+      renderSuggestions();
+      setStatus('🗑️ Removed: "' + text + '"', 'info');
+    }
+
+    function updateDeleteButton() {
+      var checked = settingsList.querySelectorAll('.item-checkbox:checked');
+      deleteSelectedBtn.disabled = checked.length === 0;
+      if (checked.length > 0) {
+        deleteSelectedBtn.textContent = '🗑️ Delete Selected (' + checked.length + ')';
+      } else {
+        deleteSelectedBtn.textContent = '🗑️ Delete Selected';
+      }
+    }
+
+    function addSuggestion(text) {
+      var trimmed = text.trim();
+      if (!trimmed) {
+        setStatus('⚠️ Please enter a suggestion', 'error');
+        return;
+      }
+      if (state.suggestions.indexOf(trimmed) !== -1) {
+        setStatus('⚠️ Suggestion already exists', 'warning');
+        return;
+      }
+      state.suggestions.push(trimmed);
+      saveSuggestions();
+      renderSuggestions();
+      renderSettings();
+      setStatus('✅ Added: "' + trimmed + '"', 'success');
+      newSuggestionInput.value = '';
+      addModal.classList.remove('active');
+    }
+
+    // ============================================================
+    // EVENTS
+    // ============================================================
+    settingsBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      state.editingIndex = -1;
+      renderSettings();
+      settingsModal.classList.add('active');
+      this.classList.add('active');
+    });
+
+    closeSettingsBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      settingsModal.classList.remove('active');
+      settingsBtn.classList.remove('active');
+    });
+
+    doneSettingsBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      settingsModal.classList.remove('active');
+      settingsBtn.classList.remove('active');
+      setStatus('✅ Settings saved', 'success');
+    });
+
+    deleteSelectedBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var checked = settingsList.querySelectorAll('.item-checkbox:checked');
+      if (checked.length === 0) return;
+      
+      var indices = Array.from(checked).map(function(cb) { return parseInt(cb.dataset.index); }).sort(function(a,b) { return b - a; });
+      var texts = indices.map(function(i) { return state.suggestions[i]; });
+      
+      if (confirm('Delete ' + texts.length + ' suggestion(s)?')) {
+        indices.forEach(function(i) {
+          var text = state.suggestions[i];
+          state.suggestions.splice(i, 1);
+          var selIndex = state.selectedSuggestions.indexOf(text);
+          if (selIndex !== -1) {
+            state.selectedSuggestions.splice(selIndex, 1);
+          }
+        });
+        saveSuggestions();
+        renderSettings();
+        renderSuggestions();
+        setStatus('🗑️ Deleted ' + texts.length + ' suggestion(s)', 'info');
+      }
+    });
+
+    clearAllDataBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearDataModal.classList.add('active');
+    });
+
+    cancelClearBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearDataModal.classList.remove('active');
+    });
+
+    confirmClearBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      clearAllData();
+      clearDataModal.classList.remove('active');
+      renderSettings();
+    });
+
+    settingsModal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        settingsModal.classList.remove('active');
+        settingsBtn.classList.remove('active');
+      }
+    });
+
+    clearDataModal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        clearDataModal.classList.remove('active');
+      }
+    });
+
+    addSuggestionBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      addModal.classList.add('active');
+      newSuggestionInput.value = '';
+      setTimeout(function() { newSuggestionInput.focus(); }, 150);
+    });
+
+    cancelAddBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      addModal.classList.remove('active');
+    });
+
+    confirmAddBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      addSuggestion(newSuggestionInput.value);
+    });
+
+    newSuggestionInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addSuggestion(this.value);
+      }
+      if (e.key === 'Escape') {
+        addModal.classList.remove('active');
+      }
+    });
+
+    addModal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        addModal.classList.remove('active');
+      }
+    });
+
+    ticketInput.addEventListener('input', function() {
+      updateCharCount();
+      var currentValue = this.value;
+      var combinedSelected = state.selectedSuggestions.join(' · ');
+      
+      if (currentValue !== combinedSelected) {
+        var matched = false;
+        for (var i = 0; i < state.suggestions.length; i++) {
+          var text = state.suggestions[i];
+          if (currentValue === text) {
+            matched = true;
+            if (state.selectedSuggestions.indexOf(text) === -1) {
+              state.selectedSuggestions = [text];
+              renderSuggestions();
+            }
+            break;
+          }
+        }
+        if (!matched && currentValue === '') {
+          state.selectedSuggestions = [];
+          renderSuggestions();
+        }
+      }
+    });
+
+    clearTextBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      ticketInput.value = '';
+      state.selectedSuggestions = [];
+      updateCharCount();
+      renderSuggestions();
+      setStatus('🗑️ Message cleared', 'info');
+    });
+
+    // ============================================================
+    // RENDER
+    // ============================================================
+    function renderMainView() {
+      var photo = state.photos[state.selectedIndex];
+      if (photo.dataUrl) {
+        liveVideo.style.display = 'none';
+        mainPreviewImg.src = photo.dataUrl;
+        mainPreviewImg.style.display = 'block';
+        mainPlaceholder.style.display = 'none';
+        if (state.isVideoRunning) {
+          liveVideo.style.display = 'none';
+        }
+      } else if (state.isVideoRunning) {
+        liveVideo.style.display = 'block';
+        mainPreviewImg.style.display = 'none';
+        mainPlaceholder.style.display = 'none';
+      } else {
+        liveVideo.style.display = 'none';
+        mainPreviewImg.style.display = 'none';
+        mainPlaceholder.style.display = 'flex';
+      }
+      updateThumbnails();
+      updateButtons();
+    }
+
+    function updateThumbnails() {
+      for (var i = 0; i < 2; i++) {
+        var thumb = thumbnails[i];
+        var photo = state.photos[i];
+        var existingImg = thumb.querySelector('img');
+        var placeholder = thumb.querySelector('.thumb-placeholder');
+        var label = thumb.querySelector('.thumb-label');
+
+        if (photo.dataUrl) {
+          if (!existingImg) {
+            var img = document.createElement('img');
+            img.src = photo.dataUrl;
+            img.alt = 'Photo ' + (i+1);
+            img.loading = 'lazy';
+            thumb.insertBefore(img, placeholder);
+            thumb.classList.add('has-image');
+          } else {
+            existingImg.src = photo.dataUrl;
+          }
+          if (placeholder) placeholder.style.display = 'none';
+          if (label) label.textContent = 'Photo ' + (i+1);
+        } else {
+          if (existingImg) existingImg.remove();
+          if (placeholder) placeholder.style.display = 'block';
+          if (label) label.textContent = 'Empty';
+          thumb.classList.remove('has-image');
+        }
+        thumb.classList.toggle('active', i === state.selectedIndex);
+      }
+    }
+
+    // ============================================================
+    // CAPTURE - FIXED LANDSCAPE
+    // ============================================================
+    function capturePhoto() {
+      if (!state.cameraReady) {
+        startCamera().then(function(started) {
+          if (started) {
+            setTimeout(capturePhoto, 300);
+          }
+        });
+        return;
+      }
+
+      if (!liveVideo.videoWidth || !liveVideo.videoHeight) {
+        setStatus('⏳ Camera not ready, please wait...', 'warning');
+        return;
+      }
+
+      var slot = -1;
+      for (var i = 0; i < 2; i++) {
+        if (!state.photos[i].dataUrl) {
+          slot = i;
+          break;
+        }
+      }
+      if (slot === -1) {
+        setStatus('⚠️ Both filled! Retake.', 'warning');
+        return;
+      }
+
+      setStatus('📷 Capturing...', 'warning');
+
+      try {
+        var canvas = document.createElement('canvas');
+        var videoWidth = liveVideo.videoWidth;
+        var videoHeight = liveVideo.videoHeight;
+        
+        // LOG THE VIDEO DIMENSIONS
+        console.log('Video dimensions:', videoWidth, 'x', videoHeight);
+        console.log('Orientation:', state.orientation);
+        
+        var targetWidth, targetHeight;
+        
+        // FORCE LANDSCAPE - width should ALWAYS be larger than height
+        if (state.orientation === 'landscape') {
+          // Landscape mode: width > height
+          targetWidth = Math.max(videoWidth, videoHeight);
+          targetHeight = Math.min(videoWidth, videoHeight);
+        } else {
+          // Portrait mode: height > width
+          targetWidth = Math.min(videoWidth, videoHeight);
+          targetHeight = Math.max(videoWidth, videoHeight);
+        }
+        
+        console.log('Target dimensions:', targetWidth, 'x', targetHeight);
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        var ctx = canvas.getContext('2d');
+        
+        // Determine if we need to rotate
+        // If video is portrait (width < height) and we want landscape (width > height)
+        var shouldRotate = false;
+        if (state.orientation === 'landscape' && videoWidth < videoHeight) {
+          shouldRotate = true;
+        } else if (state.orientation === 'portrait' && videoWidth > videoHeight) {
+          shouldRotate = true;
+        }
+        
+        console.log('Should rotate:', shouldRotate);
+        
+        if (shouldRotate) {
+          // Rotate 90 degrees clockwise
+          ctx.translate(canvas.width, 0);
+          ctx.rotate(Math.PI / 2);
+          ctx.drawImage(liveVideo, 0, 0, videoHeight, videoWidth);
+        } else {
+          ctx.drawImage(liveVideo, 0, 0, videoWidth, videoHeight);
+        }
+
+        // HIGH QUALITY JPEG
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        
+        // LOG THE FINAL IMAGE DIMENSIONS
+        var img = new Image();
+        img.onload = function() {
+          console.log('Final image dimensions:', img.width, 'x', img.height);
+        };
+        img.src = dataUrl;
+        
+        state.photos[slot].dataUrl = dataUrl;
+        state.selectedIndex = slot;
+
+        renderMainView();
+        
+        // Flash animation
+        photoFlash.classList.add('active');
+        setTimeout(function() {
+          photoFlash.classList.remove('active');
+        }, 600);
+        
+        setStatus('✅ Photo ' + (slot+1) + ' saved!', 'success');
+        
+        // Show camera again
+        setTimeout(function() {
+          if (state.isVideoRunning) {
+            liveVideo.style.display = 'block';
+            mainPreviewImg.style.display = 'none';
+            mainPlaceholder.style.display = 'none';
+          }
+          updateThumbnails();
+        }, 300);
+        
+      } catch (error) {
+        console.error('Capture error:', error);
+        setStatus('❌ Capture error: ' + error.message, 'error');
+      }
+    }
+
+    // ============================================================
+    // RETAKE
+    // ============================================================
+    function retakePhoto() {
+      var idx = state.selectedIndex;
+      if (!state.photos[idx].dataUrl) {
+        for (var i = 0; i < 2; i++) {
+          if (state.photos[i].dataUrl) {
+            state.selectedIndex = i;
+            break;
+          }
+        }
+      }
+      var slot = state.selectedIndex;
+      if (!state.photos[slot].dataUrl) {
+        setStatus('⚠️ No photo to retake', 'warning');
+        return;
+      }
+      state.photos[slot].dataUrl = null;
+      renderMainView();
+      if (state.isVideoRunning) {
+        liveVideo.style.display = 'block';
+        mainPreviewImg.style.display = 'none';
+        mainPlaceholder.style.display = 'none';
+      }
+      setStatus('🔄 Photo ' + (slot+1) + ' removed', 'info');
+    }
+
+    // ============================================================
+    // SEND WHATSAPP
+    // ============================================================
+    function sendWhatsApp() {
+      var photosToSend = [];
+      for (var i = 0; i < state.photos.length; i++) {
+        if (state.photos[i].dataUrl) {
+          photosToSend.push({
+            index: i,
+            dataUrl: state.photos[i].dataUrl
+          });
+        }
+      }
+
+      if (photosToSend.length === 0) {
+        setStatus('⚠️ No photos to send', 'error');
+        return;
+      }
+
+      state.isSending = true;
+      sendBtn.disabled = true;
+      setStatus('📤 Preparing ' + photosToSend.length + ' photo(s)...', 'warning');
+
+      var ticket = ticketInput.value || '';
+      var messageText = ticket || 'Bed Decoration Photos';
+      var encodedMsg = encodeURIComponent('🏨 *' + messageText + '*');
+
+      if (navigator.share) {
+        var filePromises = photosToSend.map(function(photo) {
+          return fetch(photo.dataUrl)
+            .then(function(res) { return res.blob(); })
+            .then(function(blob) {
+              var num = photo.index + 1;
+              return new File([blob], 'bed_decor_photo_' + num + '.jpg', { 
+                type: 'image/jpeg' 
+              });
+            });
+        });
+
+        Promise.all(filePromises)
+          .then(function(files) {
+            var shareData = {
+              title: 'Bed Decor',
+              text: messageText,
+              files: files
+            };
+
+            if (navigator.canShare && navigator.canShare(shareData)) {
+              navigator.share(shareData)
+                .then(function() {
+                  state.isSending = false;
+                  sendBtn.disabled = false;
+                  updateButtons();
+                  setStatus('✅ ' + photosToSend.length + ' photo(s) shared!', 'success');
+                })
+                .catch(function(err) {
+                  if (err.name !== 'AbortError') {
+                    fallbackToWhatsApp();
+                  } else {
+                    state.isSending = false;
+                    sendBtn.disabled = false;
+                    updateButtons();
+                    setStatus('⚠️ Cancelled', 'warning');
+                  }
+                });
+            } else {
+              fallbackToWhatsApp();
+            }
+          })
+          .catch(function() { 
+            fallbackToWhatsApp(); 
+          });
+      } else {
+        fallbackToWhatsApp();
+      }
+
+      function fallbackToWhatsApp() {
+        var url = 'https://api.whatsapp.com/send?text=' + encodedMsg;
+        window.open(url, '_blank');
+        setStatus('📤 WhatsApp opened - attach your photos', 'info');
+        state.isSending = false;
+        sendBtn.disabled = false;
+        updateButtons();
+      }
+    }
+
+    // ============================================================
+    // THUMBNAILS
+    // ============================================================
+    thumbnails.forEach(function(thumb, idx) {
+      thumb.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (state.photos[idx].dataUrl) {
+          imageViewImg.src = state.photos[idx].dataUrl;
+          photoInfo.textContent = '📸 Photo ' + (idx + 1);
+          imageViewModal.classList.add('active');
+        } else {
+          state.selectedIndex = idx;
+          renderMainView();
+          setStatus('📸 Slot ' + (idx+1) + ' selected', 'info');
+        }
+      });
+    });
+
+    imageViewClose.addEventListener('click', function(e) {
+      e.preventDefault();
+      imageViewModal.classList.remove('active');
+    });
+    imageViewModal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        imageViewModal.classList.remove('active');
+      }
+    });
+
+    // ============================================================
+    // PWA INSTALL
+    // ============================================================
+    var deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.remove('hidden');
+    });
+
+    installBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result) {
+          if (result.outcome === 'accepted') {
+            setStatus('✅ App installed!', 'success');
+          }
+          deferredPrompt = null;
+          installBtn.classList.add('hidden');
+        });
+      }
+    });
+
+    window.addEventListener('appinstalled', function() {
+      setStatus('🎉 App installed successfully!', 'success');
+      installBtn.classList.add('hidden');
+    });
+
+    // ============================================================
+    // EVENT LISTENERS
+    // ============================================================
+    captureBtn.addEventListener('click', capturePhoto);
+    retakeBtn.addEventListener('click', retakePhoto);
+    sendBtn.addEventListener('click', sendWhatsApp);
+
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        if (!state.isVideoRunning && state.cameraReady) {
+          startCamera();
+        }
+      }
+    });
+
+    var touchHandler = function() {
+      if (!state.isVideoRunning && !state.cameraReady) {
+        startCamera();
+      }
+      document.removeEventListener('touchstart', touchHandler);
+    };
+    document.addEventListener('touchstart', touchHandler, { once: true, passive: true });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    function init() {
+      checkVersion();
+      loadSuggestions();
+      
+      renderSuggestions();
+      renderMainView();
+      updateCharCount();
+      updateSettingsBadge();
+      
+      setStatus('📷 Starting camera...', 'info');
+      
+      setTimeout(function() {
+        startCamera().then(function(started) {
+          if (!started) {
+            setStatus('📷 Tap "Allow Camera" to start', 'warning');
+          }
+        });
+      }, 300);
+    }
+
+    init();
+  })();
+</script>
+</body>
+</html>
