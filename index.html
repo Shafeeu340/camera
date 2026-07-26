@@ -337,6 +337,34 @@
     .install-btn.hidden { display: none; }
     .install-btn .icon { font-size: 0.8rem; }
     
+    /* === FLASHLIGHT BUTTON === */
+    .flash-btn {
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+      flex-shrink: 0;
+    }
+    .flash-btn:active { transform: scale(0.88); background: rgba(0,0,0,0.5); }
+    .flash-btn.on {
+      color: #facc15;
+      border-color: rgba(250,204,21,0.3);
+      background: rgba(250,204,21,0.1);
+      box-shadow: 0 0 20px rgba(250,204,21,0.1);
+    }
+    .flash-btn .icon { font-size: 0.8rem; }
+    .flash-btn .icon.off { opacity: 0.5; }
+    
     /* === BOTTOM CONTROLS === */
     .bottom-controls {
       display: flex;
@@ -1115,7 +1143,7 @@
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.0.3</span>
+  <span class="version-badge" id="versionBadge">v1.0.6</span>
   
   <!-- FULL SCREEN CAMERA -->
   <div class="camera-container">
@@ -1147,6 +1175,10 @@
           <span class="dot off" id="cameraDot"></span>
           <span id="cameraStatusText">Off</span>
         </div>
+        <!-- FLASHLIGHT BUTTON -->
+        <button class="flash-btn" id="flashBtn" title="Flashlight">
+          <span class="icon off">🔦</span>
+        </button>
       </div>
       <div class="right-group">
         <button class="install-btn hidden" id="installBtn"><span class="icon">📲</span> Install</button>
@@ -1274,7 +1306,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.0.4';
+    var APP_VERSION = '1.0.6';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -1292,7 +1324,10 @@
       isVideoRunning: false,
       isInitializing: false,
       isSending: false,
-      orientation: 'landscape'
+      orientation: 'landscape',
+      flashOn: false,
+      flashSupported: false,
+      videoTrack: null
     };
 
     // DOM REFS
@@ -1340,6 +1375,7 @@
     var installBtn = document.getElementById('installBtn');
     var orientLandscape = document.getElementById('orientLandscape');
     var orientPortrait = document.getElementById('orientPortrait');
+    var flashBtn = document.getElementById('flashBtn');
 
     // ============================================================
     // VERSION & STORAGE
@@ -1432,6 +1468,51 @@
     }
 
     // ============================================================
+    // FLASHLIGHT
+    // ============================================================
+    function toggleFlash() {
+      if (!state.videoTrack) {
+        setStatus('⚠️ Camera not ready', 'warning');
+        return;
+      }
+
+      // Check if flash is supported
+      var capabilities = state.videoTrack.getCapabilities ? state.videoTrack.getCapabilities() : null;
+      if (!capabilities || !capabilities.torch) {
+        setStatus('⚠️ Flash not available on this device', 'error');
+        return;
+      }
+
+      state.flashOn = !state.flashOn;
+      
+      try {
+        state.videoTrack.applyConstraints({
+          advanced: [{ torch: state.flashOn }]
+        }).then(function() {
+          flashBtn.classList.toggle('on', state.flashOn);
+          var icon = flashBtn.querySelector('.icon');
+          if (state.flashOn) {
+            icon.textContent = '🔦';
+            icon.className = 'icon';
+            setStatus('🔦 Flash ON', 'success');
+          } else {
+            icon.textContent = '🔦';
+            icon.className = 'icon off';
+            setStatus('🔦 Flash OFF', 'info');
+          }
+        }).catch(function(err) {
+          console.error('Flash error:', err);
+          state.flashOn = !state.flashOn;
+          setStatus('⚠️ Flash error: ' + err.message, 'error');
+        });
+      } catch (err) {
+        console.error('Flash error:', err);
+        state.flashOn = !state.flashOn;
+        setStatus('⚠️ Flash not supported', 'error');
+      }
+    }
+
+    // ============================================================
     // ORIENTATION
     // ============================================================
     function setOrientation(mode) {
@@ -1462,8 +1543,8 @@
       }
 
       var isLandscape = (mode === 'landscape');
-      var width = isLandscape ? 1920 : 1080;
-      var height = isLandscape ? 1080 : 1920;
+      var width = isLandscape ? 4096 : 3072;
+      var height = isLandscape ? 3072 : 4096;
 
       state.isInitializing = true;
       setStatus('📷 Starting camera...', 'warning');
@@ -1473,12 +1554,23 @@
           facingMode: 'environment',
           width: { ideal: width },
           height: { ideal: height },
-          aspectRatio: { ideal: isLandscape ? 16/9 : 9/16 }
+          aspectRatio: { ideal: isLandscape ? 4/3 : 3/4 }
         },
         audio: false
       })
       .then(function(stream) {
         state.videoStream = stream;
+        state.videoTrack = stream.getVideoTracks()[0];
+        
+        // Check flash support
+        var capabilities = state.videoTrack.getCapabilities ? state.videoTrack.getCapabilities() : null;
+        state.flashSupported = capabilities && capabilities.torch;
+        if (state.flashSupported) {
+          flashBtn.style.display = 'flex';
+        } else {
+          flashBtn.style.display = 'none';
+        }
+        
         liveVideo.srcObject = stream;
         liveVideo.setAttribute('playsinline', 'true');
         liveVideo.setAttribute('webkit-playsinline', 'true');
@@ -1561,6 +1653,7 @@
           try { t.stop(); } catch (e) {}
         });
         state.videoStream = null;
+        state.videoTrack = null;
       }
       state.isVideoRunning = false;
       liveVideo.style.display = 'none';
@@ -1575,6 +1668,9 @@
       }
       startCamera();
     });
+
+    // Flash button
+    flashBtn.addEventListener('click', toggleFlash);
 
     // ============================================================
     // SUGGESTIONS
@@ -1996,7 +2092,7 @@
     }
 
     // ============================================================
-    // CAPTURE - FIXED: PROPER LANDSCAPE WITHOUT BLACK BARS
+    // CAPTURE
     // ============================================================
     function capturePhoto() {
       if (!state.cameraReady) {
@@ -2031,85 +2127,54 @@
         var videoWidth = liveVideo.videoWidth;
         var videoHeight = liveVideo.videoHeight;
         
-        console.log('=== CAPTURE DEBUG ===');
-        console.log('Video dimensions:', videoWidth, 'x', videoHeight);
-        console.log('Orientation:', state.orientation);
-        
-        // Create canvas with the CORRECT dimensions
         var canvas = document.createElement('canvas');
         var ctx = canvas.getContext('2d');
         
         var targetWidth, targetHeight;
         
-        // Determine target dimensions based on orientation
         if (state.orientation === 'landscape') {
-          // Landscape: width should be larger than height
-          // If video is portrait (1080x1920), we want 1920x1080
-          // If video is landscape (1920x1080), we want 1920x1080
-          targetWidth = Math.max(videoWidth, videoHeight);
-          targetHeight = Math.min(videoWidth, videoHeight);
+          if (videoWidth < videoHeight) {
+            targetWidth = videoHeight;
+            targetHeight = videoWidth;
+          } else {
+            targetWidth = videoWidth;
+            targetHeight = videoHeight;
+          }
         } else {
-          // Portrait: height should be larger than width
-          targetWidth = Math.min(videoWidth, videoHeight);
-          targetHeight = Math.max(videoWidth, videoHeight);
+          if (videoWidth > videoHeight) {
+            targetWidth = videoHeight;
+            targetHeight = videoWidth;
+          } else {
+            targetWidth = videoWidth;
+            targetHeight = videoHeight;
+          }
         }
-        
-        console.log('Target dimensions:', targetWidth, 'x', targetHeight);
         
         canvas.width = targetWidth;
         canvas.height = targetHeight;
         
-        // Clear canvas with black
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Calculate drawing position to center the image
-        var drawWidth, drawHeight, offsetX, offsetY;
-        
-        // Determine if we need to rotate
         var shouldRotate = false;
         if (state.orientation === 'landscape' && videoWidth < videoHeight) {
-          shouldRotate = true; // Video is portrait, need to rotate to landscape
+          shouldRotate = true;
         } else if (state.orientation === 'portrait' && videoWidth > videoHeight) {
-          shouldRotate = true; // Video is landscape, need to rotate to portrait
+          shouldRotate = true;
         }
-        
-        console.log('Should rotate:', shouldRotate);
         
         if (shouldRotate) {
-          // When rotating, we swap width/height for drawing
-          // The video is portrait (1080x1920), we want landscape (1920x1080)
-          // So we rotate the canvas and draw the image
           ctx.translate(canvas.width / 2, canvas.height / 2);
           ctx.rotate(Math.PI / 2);
-          
-          // Draw the video centered on the rotated canvas
-          // The video is now drawn as if it were landscape
-          var drawW = videoHeight;
-          var drawH = videoWidth;
-          ctx.drawImage(liveVideo, -drawW/2, -drawH/2, drawW, drawH);
+          ctx.drawImage(liveVideo, -videoHeight / 2, -videoWidth / 2, videoHeight, videoWidth);
         } else {
-          // No rotation needed, just draw normally
-          ctx.drawImage(liveVideo, 0, 0, targetWidth, targetHeight);
+          ctx.drawImage(liveVideo, 0, 0, canvas.width, canvas.height);
         }
 
-        // HIGH QUALITY JPEG
         var dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-        
-        // Verify final image dimensions
-        var img = new Image();
-        img.onload = function() {
-          console.log('Final image dimensions:', img.width, 'x', img.height);
-          console.log('=== CAPTURE COMPLETE ===');
-        };
-        img.src = dataUrl;
         
         state.photos[slot].dataUrl = dataUrl;
         state.selectedIndex = slot;
 
         renderMainView();
         
-        // Flash animation
         photoFlash.classList.add('active');
         setTimeout(function() {
           photoFlash.classList.remove('active');
@@ -2117,7 +2182,6 @@
         
         setStatus('✅ Photo ' + (slot+1) + ' saved!', 'success');
         
-        // Show camera again
         setTimeout(function() {
           if (state.isVideoRunning) {
             liveVideo.style.display = 'block';
@@ -2133,9 +2197,6 @@
       }
     }
 
-    // ============================================================
-    // RETAKE
-    // ============================================================
     function retakePhoto() {
       var idx = state.selectedIndex;
       if (!state.photos[idx].dataUrl) {
@@ -2339,6 +2400,9 @@
       renderMainView();
       updateCharCount();
       updateSettingsBadge();
+      
+      // Hide flash button initially (will show if supported)
+      flashBtn.style.display = 'none';
       
       setStatus('📷 Starting camera...', 'info');
       
