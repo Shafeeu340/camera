@@ -1274,7 +1274,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.0.3';
+    var APP_VERSION = '1.0.4';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -1996,7 +1996,7 @@
     }
 
     // ============================================================
-    // CAPTURE - FIXED LANDSCAPE
+    // CAPTURE - FIXED: PROPER LANDSCAPE WITHOUT BLACK BARS
     // ============================================================
     function capturePhoto() {
       if (!state.cameraReady) {
@@ -2028,23 +2028,28 @@
       setStatus('📷 Capturing...', 'warning');
 
       try {
-        var canvas = document.createElement('canvas');
         var videoWidth = liveVideo.videoWidth;
         var videoHeight = liveVideo.videoHeight;
         
-        // LOG THE VIDEO DIMENSIONS
+        console.log('=== CAPTURE DEBUG ===');
         console.log('Video dimensions:', videoWidth, 'x', videoHeight);
         console.log('Orientation:', state.orientation);
         
+        // Create canvas with the CORRECT dimensions
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        
         var targetWidth, targetHeight;
         
-        // FORCE LANDSCAPE - width should ALWAYS be larger than height
+        // Determine target dimensions based on orientation
         if (state.orientation === 'landscape') {
-          // Landscape mode: width > height
+          // Landscape: width should be larger than height
+          // If video is portrait (1080x1920), we want 1920x1080
+          // If video is landscape (1920x1080), we want 1920x1080
           targetWidth = Math.max(videoWidth, videoHeight);
           targetHeight = Math.min(videoWidth, videoHeight);
         } else {
-          // Portrait mode: height > width
+          // Portrait: height should be larger than width
           targetWidth = Math.min(videoWidth, videoHeight);
           targetHeight = Math.max(videoWidth, videoHeight);
         }
@@ -2053,35 +2058,49 @@
         
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-        var ctx = canvas.getContext('2d');
+        
+        // Clear canvas with black
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Calculate drawing position to center the image
+        var drawWidth, drawHeight, offsetX, offsetY;
         
         // Determine if we need to rotate
-        // If video is portrait (width < height) and we want landscape (width > height)
         var shouldRotate = false;
         if (state.orientation === 'landscape' && videoWidth < videoHeight) {
-          shouldRotate = true;
+          shouldRotate = true; // Video is portrait, need to rotate to landscape
         } else if (state.orientation === 'portrait' && videoWidth > videoHeight) {
-          shouldRotate = true;
+          shouldRotate = true; // Video is landscape, need to rotate to portrait
         }
         
         console.log('Should rotate:', shouldRotate);
         
         if (shouldRotate) {
-          // Rotate 90 degrees clockwise
-          ctx.translate(canvas.width, 0);
+          // When rotating, we swap width/height for drawing
+          // The video is portrait (1080x1920), we want landscape (1920x1080)
+          // So we rotate the canvas and draw the image
+          ctx.translate(canvas.width / 2, canvas.height / 2);
           ctx.rotate(Math.PI / 2);
-          ctx.drawImage(liveVideo, 0, 0, videoHeight, videoWidth);
+          
+          // Draw the video centered on the rotated canvas
+          // The video is now drawn as if it were landscape
+          var drawW = videoHeight;
+          var drawH = videoWidth;
+          ctx.drawImage(liveVideo, -drawW/2, -drawH/2, drawW, drawH);
         } else {
-          ctx.drawImage(liveVideo, 0, 0, videoWidth, videoHeight);
+          // No rotation needed, just draw normally
+          ctx.drawImage(liveVideo, 0, 0, targetWidth, targetHeight);
         }
 
         // HIGH QUALITY JPEG
         var dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         
-        // LOG THE FINAL IMAGE DIMENSIONS
+        // Verify final image dimensions
         var img = new Image();
         img.onload = function() {
           console.log('Final image dimensions:', img.width, 'x', img.height);
+          console.log('=== CAPTURE COMPLETE ===');
         };
         img.src = dataUrl;
         
