@@ -1134,7 +1134,7 @@
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.0.9</span>
+  <span class="version-badge" id="versionBadge">v1.1.0</span>
   
   <div class="camera-container">
     <div class="camera-preview" id="cameraPreview">
@@ -1286,7 +1286,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.0.9';
+    var APP_VERSION = '1.1.0';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -1449,6 +1449,34 @@
     }
 
     // ============================================================
+    // DEVICE ORIENTATION (RELIABLE)
+    // ============================================================
+    function getDeviceOrientation() {
+      var orientation = 'portrait'; // default fallback
+      try {
+        if (screen.orientation && screen.orientation.type) {
+          var type = screen.orientation.type;
+          if (type === 'landscape-primary' || type === 'landscape-secondary') {
+            orientation = 'landscape';
+          } else if (type === 'portrait-primary' || type === 'portrait-secondary') {
+            orientation = 'portrait';
+          }
+        } else if (screen.orientation && screen.orientation.angle !== undefined) {
+          var angle = screen.orientation.angle; // 0, 90, 180, 270
+          if (angle === 90 || angle === 270) orientation = 'landscape';
+          else orientation = 'portrait';
+        } else if (window.orientation !== undefined) {
+          var winAngle = window.orientation; // -90, 0, 90, 180
+          if (winAngle === 90 || winAngle === -90) orientation = 'landscape';
+          else orientation = 'portrait';
+        }
+      } catch (e) {
+        console.warn('Orientation detection failed, using fallback', e);
+      }
+      return orientation;
+    }
+
+    // ============================================================
     // FLASHLIGHT
     // ============================================================
     function toggleFlash() {
@@ -1491,7 +1519,7 @@
     }
 
     // ============================================================
-    // ORIENTATION
+    // ORIENTATION UI (GUIDE ONLY)
     // ============================================================
     function setOrientation(mode) {
       state.orientation = mode;
@@ -2057,7 +2085,62 @@
     }
 
     // ============================================================
-    // CAPTURE - FIXED: NO FORCED ROTATION
+    // ORIENTATION CORRECTION (BAKE INTO PIXELS)
+    // ============================================================
+    function ensureCorrectOrientation(dataUrl) {
+      return new Promise(function(resolve) {
+        var img = new Image();
+        img.onload = function() {
+          var width = img.width;
+          var height = img.height;
+          var deviceOrientation = getDeviceOrientation();
+          var isLandscape = (width > height);
+          var shouldRotate = false;
+          var rotationAngle = 0; // degrees clockwise
+
+          // Decide if rotation is needed
+          if (deviceOrientation === 'landscape' && !isLandscape) {
+            // Device is landscape but image is portrait -> rotate 90° clockwise
+            shouldRotate = true;
+            rotationAngle = 90;
+          } else if (deviceOrientation === 'portrait' && isLandscape) {
+            // Device is portrait but image is landscape -> rotate 90° counter-clockwise
+            shouldRotate = true;
+            rotationAngle = -90;
+          }
+
+          if (!shouldRotate) {
+            resolve(dataUrl);
+            return;
+          }
+
+          // Rotate on canvas
+          var canvas = document.createElement('canvas');
+          var ctx = canvas.getContext('2d');
+          // Swap width/height for 90° rotations
+          if (rotationAngle === 90 || rotationAngle === -90) {
+            canvas.width = height;
+            canvas.height = width;
+          } else {
+            canvas.width = width;
+            canvas.height = height;
+          }
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(rotationAngle * Math.PI / 180);
+          ctx.drawImage(img, -width / 2, -height / 2);
+          var newDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+          resolve(newDataUrl);
+        };
+        img.onerror = function() {
+          // If image load fails, fallback to original
+          resolve(dataUrl);
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    // ============================================================
+    // CAPTURE - WITH DEVICE ORIENTATION CORRECTION
     // ============================================================
     async function capturePhoto() {
       if (!state.cameraReady) {
@@ -2109,6 +2192,9 @@
           ctx.drawImage(liveVideo, 0, 0);
           dataUrl = canvas.toDataURL('image/jpeg', 0.95);
         }
+
+        // Apply orientation correction based on device orientation
+        dataUrl = await ensureCorrectOrientation(dataUrl);
 
         state.photos[slot].dataUrl = dataUrl;
         state.selectedIndex = slot;
