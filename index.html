@@ -1134,7 +1134,7 @@
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.1.0</span>
+  <span class="version-badge" id="versionBadge">v1.2.0</span>
   
   <div class="camera-container">
     <div class="camera-preview" id="cameraPreview">
@@ -1286,7 +1286,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.1.0';
+    var APP_VERSION = '1.2.0';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -1446,34 +1446,6 @@
 
     function updateCharCount() {
       charCount.textContent = ticketInput.value.length;
-    }
-
-    // ============================================================
-    // DEVICE ORIENTATION (RELIABLE)
-    // ============================================================
-    function getDeviceOrientation() {
-      var orientation = 'portrait'; // default fallback
-      try {
-        if (screen.orientation && screen.orientation.type) {
-          var type = screen.orientation.type;
-          if (type === 'landscape-primary' || type === 'landscape-secondary') {
-            orientation = 'landscape';
-          } else if (type === 'portrait-primary' || type === 'portrait-secondary') {
-            orientation = 'portrait';
-          }
-        } else if (screen.orientation && screen.orientation.angle !== undefined) {
-          var angle = screen.orientation.angle; // 0, 90, 180, 270
-          if (angle === 90 || angle === 270) orientation = 'landscape';
-          else orientation = 'portrait';
-        } else if (window.orientation !== undefined) {
-          var winAngle = window.orientation; // -90, 0, 90, 180
-          if (winAngle === 90 || winAngle === -90) orientation = 'landscape';
-          else orientation = 'portrait';
-        }
-      } catch (e) {
-        console.warn('Orientation detection failed, using fallback', e);
-      }
-      return orientation;
     }
 
     // ============================================================
@@ -2085,62 +2057,61 @@
     }
 
     // ============================================================
-    // ORIENTATION CORRECTION (BAKE INTO PIXELS)
+    // renderToDataUrl – bakes orientation into pixels
     // ============================================================
-    function ensureCorrectOrientation(dataUrl) {
-      return new Promise(function(resolve) {
-        var img = new Image();
-        img.onload = function() {
-          var width = img.width;
-          var height = img.height;
-          var deviceOrientation = getDeviceOrientation();
-          var isLandscape = (width > height);
-          var shouldRotate = false;
-          var rotationAngle = 0; // degrees clockwise
-
-          // Decide if rotation is needed
-          if (deviceOrientation === 'landscape' && !isLandscape) {
-            // Device is landscape but image is portrait -> rotate 90° clockwise
-            shouldRotate = true;
-            rotationAngle = 90;
-          } else if (deviceOrientation === 'portrait' && isLandscape) {
-            // Device is portrait but image is landscape -> rotate 90° counter-clockwise
-            shouldRotate = true;
-            rotationAngle = -90;
-          }
-
-          if (!shouldRotate) {
+    function renderToDataUrl(imageBitmap, desiredOrientation) {
+      return new Promise(function(resolve, reject) {
+        try {
+          var imgWidth = imageBitmap.width;
+          var imgHeight = imageBitmap.height;
+          var isLandscape = (imgWidth > imgHeight);
+          var targetLandscape = (desiredOrientation === 'landscape');
+          
+          // If already matches desired orientation, just return as JPEG
+          if ((targetLandscape && isLandscape) || (!targetLandscape && !isLandscape)) {
+            // No rotation needed – just convert to JPEG
+            var canvas = document.createElement('canvas');
+            canvas.width = imgWidth;
+            canvas.height = imgHeight;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(imageBitmap, 0, 0);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
             resolve(dataUrl);
             return;
           }
-
-          // Rotate on canvas
+          
+          // Need to rotate
           var canvas = document.createElement('canvas');
+          // Swap dimensions for 90° rotation
+          canvas.width = imgHeight;
+          canvas.height = imgWidth;
           var ctx = canvas.getContext('2d');
-          // Swap width/height for 90° rotations
-          if (rotationAngle === 90 || rotationAngle === -90) {
-            canvas.width = height;
-            canvas.height = width;
-          } else {
-            canvas.width = width;
-            canvas.height = height;
+          
+          // Determine rotation direction
+          // If we want landscape but image is portrait -> rotate 90° clockwise (or counter depending on device)
+          // For most devices, +90 works. We'll try both and let the user flip if needed.
+          // Use +90 for landscape from portrait, -90 for portrait from landscape
+          var angle = 0;
+          if (targetLandscape && !isLandscape) {
+            angle = Math.PI / 2;   // +90°
+          } else if (!targetLandscape && isLandscape) {
+            angle = -Math.PI / 2;  // -90°
           }
+          
           ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.rotate(rotationAngle * Math.PI / 180);
-          ctx.drawImage(img, -width / 2, -height / 2);
-          var newDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-          resolve(newDataUrl);
-        };
-        img.onerror = function() {
-          // If image load fails, fallback to original
+          ctx.rotate(angle);
+          ctx.drawImage(imageBitmap, -imgWidth / 2, -imgHeight / 2);
+          
+          var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
           resolve(dataUrl);
-        };
-        img.src = dataUrl;
+        } catch (err) {
+          reject(err);
+        }
       });
     }
 
     // ============================================================
-    // CAPTURE - WITH DEVICE ORIENTATION CORRECTION
+    // CAPTURE – with ImageCapture and orientation baking
     // ============================================================
     async function capturePhoto() {
       if (!state.cameraReady) {
@@ -2166,35 +2137,58 @@
       setStatus('📷 Capturing...', 'warning');
 
       try {
-        var dataUrl;
+        var photoBlob = null;
+        var imageBitmap = null;
 
         // Try ImageCapture API for full resolution still
         if (state.imageCapture && typeof state.imageCapture.takePhoto === 'function') {
-          // Use the ImageCapture API – this gives a real photo, not a video frame
-          const photoBlob = await state.imageCapture.takePhoto({
-            imageWidth: 4032,
-            imageHeight: 3024
-          });
-          // Convert Blob to data URL
-          dataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(photoBlob);
-          });
-        } else {
-          // Fallback: capture from video canvas – NO ROTATION
-          const videoWidth = liveVideo.videoWidth;
-          const videoHeight = liveVideo.videoHeight;
-          const canvas = document.createElement('canvas');
-          canvas.width = videoWidth;
-          canvas.height = videoHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(liveVideo, 0, 0);
-          dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+          try {
+            // Get max photo capabilities to request the best resolution
+            var capabilities = await state.imageCapture.getPhotoCapabilities();
+            var maxWidth = capabilities.imageWidth ? capabilities.imageWidth.max : 4032;
+            var maxHeight = capabilities.imageHeight ? capabilities.imageHeight.max : 3024;
+            // Try with max size
+            try {
+              photoBlob = await state.imageCapture.takePhoto({
+                imageWidth: maxWidth,
+                imageHeight: maxHeight
+              });
+            } catch (sizeErr) {
+              // Fallback: try without options
+              console.warn('Sized capture failed, falling back to default', sizeErr);
+              photoBlob = await state.imageCapture.takePhoto();
+            }
+          } catch (capErr) {
+            // Fallback: no capabilities or takePhoto failed
+            console.warn('Photo capabilities error, using fallback', capErr);
+            photoBlob = await state.imageCapture.takePhoto();
+          }
         }
 
-        // Apply orientation correction based on device orientation
-        dataUrl = await ensureCorrectOrientation(dataUrl);
+        // If we got a blob from ImageCapture, use it
+        if (photoBlob) {
+          // Use createImageBitmap with imageOrientation to apply EXIF
+          imageBitmap = await createImageBitmap(photoBlob, {
+            imageOrientation: 'from-image'
+          });
+        } else {
+          // Fallback: capture from video canvas (no EXIF, but we'll bake orientation)
+          var videoWidth = liveVideo.videoWidth;
+          var videoHeight = liveVideo.videoHeight;
+          var canvas = document.createElement('canvas');
+          canvas.width = videoWidth;
+          canvas.height = videoHeight;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(liveVideo, 0, 0);
+          // Convert canvas to ImageBitmap (or just use canvas directly)
+          imageBitmap = await createImageBitmap(canvas);
+        }
+
+        // Bake the correct orientation into pixels
+        var dataUrl = await renderToDataUrl(imageBitmap, state.orientation);
+
+        // Clean up bitmap
+        if (imageBitmap) imageBitmap.close();
 
         state.photos[slot].dataUrl = dataUrl;
         state.selectedIndex = slot;
