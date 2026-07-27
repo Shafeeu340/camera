@@ -90,7 +90,6 @@
       background: #000;
     }
     
-    /* Preview image styling */
     .camera-preview #mainPreviewImg {
       width: 100%;
       height: 100%;
@@ -1135,7 +1134,7 @@
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.0.8</span>
+  <span class="version-badge" id="versionBadge">v1.0.9</span>
   
   <div class="camera-container">
     <div class="camera-preview" id="cameraPreview">
@@ -1287,7 +1286,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.0.8';
+    var APP_VERSION = '1.0.9';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -2058,7 +2057,7 @@
     }
 
     // ============================================================
-    // CAPTURE - HIGH QUALITY (ImageCapture + canvas fallback)
+    // CAPTURE - FIXED: NO FORCED ROTATION
     // ============================================================
     async function capturePhoto() {
       if (!state.cameraReady) {
@@ -2085,7 +2084,6 @@
 
       try {
         var dataUrl;
-        var finalWidth, finalHeight;
 
         // Try ImageCapture API for full resolution still
         if (state.imageCapture && typeof state.imageCapture.takePhoto === 'function') {
@@ -2100,72 +2098,16 @@
             reader.onloadend = () => resolve(reader.result);
             reader.readAsDataURL(photoBlob);
           });
-          // Get dimensions from the image
-          const img = new Image();
-          await new Promise((resolve) => {
-            img.onload = resolve;
-            img.src = dataUrl;
-          });
-          finalWidth = img.width;
-          finalHeight = img.height;
-          console.log('ImageCapture result:', finalWidth, 'x', finalHeight);
         } else {
-          // Fallback: capture from video canvas
+          // Fallback: capture from video canvas – NO ROTATION
           const videoWidth = liveVideo.videoWidth;
           const videoHeight = liveVideo.videoHeight;
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = videoWidth;
-          tempCanvas.height = videoHeight;
-          const tctx = tempCanvas.getContext('2d');
-          tctx.drawImage(liveVideo, 0, 0);
-
-          let finalCanvas = tempCanvas;
-          let fw = videoWidth, fh = videoHeight;
-
-          // Rotate if needed
-          if (state.orientation === 'landscape' && videoWidth < videoHeight) {
-            finalCanvas = document.createElement('canvas');
-            fw = videoHeight;
-            fh = videoWidth;
-            finalCanvas.width = fw;
-            finalCanvas.height = fh;
-            const ctx = finalCanvas.getContext('2d');
-            ctx.translate(fw, 0);
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(tempCanvas, 0, 0);
-          } else if (state.orientation === 'portrait' && videoWidth > videoHeight) {
-            finalCanvas = document.createElement('canvas');
-            fw = videoHeight;
-            fh = videoWidth;
-            finalCanvas.width = fw;
-            finalCanvas.height = fh;
-            const ctx = finalCanvas.getContext('2d');
-            ctx.translate(0, fh);
-            ctx.rotate(-Math.PI / 2);
-            ctx.drawImage(tempCanvas, 0, 0);
-          }
-          finalWidth = fw;
-          finalHeight = fh;
-          dataUrl = finalCanvas.toDataURL('image/jpeg', 0.95);
-        }
-
-        // If orientation is landscape but final image is portrait, rotate it (ImageCapture may return native orientation)
-        if (state.orientation === 'landscape' && finalWidth < finalHeight) {
-          const img = new Image();
-          await new Promise((resolve) => {
-            img.onload = resolve;
-            img.src = dataUrl;
-          });
           const canvas = document.createElement('canvas');
-          canvas.width = img.height;
-          canvas.height = img.width;
+          canvas.width = videoWidth;
+          canvas.height = videoHeight;
           const ctx = canvas.getContext('2d');
-          ctx.translate(canvas.width, 0);
-          ctx.rotate(Math.PI / 2);
-          ctx.drawImage(img, 0, 0);
+          ctx.drawImage(liveVideo, 0, 0);
           dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-          finalWidth = canvas.width;
-          finalHeight = canvas.height;
         }
 
         state.photos[slot].dataUrl = dataUrl;
