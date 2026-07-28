@@ -371,6 +371,32 @@
     }
     .flash-btn .icon { font-size: 1.2rem; }
     
+    /* === AUTO-ORIENTATION BADGE === */
+    .auto-orientation-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.5rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(8px);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .auto-orientation-badge .icon {
+      font-size: 0.6rem;
+    }
+    .auto-orientation-badge .live-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      display: inline-block;
+      background: #4ade80;
+      animation: pulse-dot 1.5s infinite;
+    }
+    
     .bottom-controls {
       display: flex;
       flex-direction: column;
@@ -555,42 +581,38 @@
       text-align: center;
     }
     
-    /* === ORIENTATION TOGGLE === */
-    .orientation-toggle {
+    /* === ORIENTATION INDICATOR === */
+    .orientation-indicator {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0;
-      background: rgba(0,0,0,0.35);
-      backdrop-filter: blur(8px);
-      border-radius: 30px;
-      border: 1px solid rgba(255,255,255,0.06);
-      padding: 3px;
+      gap: 6px;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(6px);
+      border-radius: 20px;
+      padding: 3px 12px;
+      border: 1px solid rgba(255,255,255,0.05);
       flex-shrink: 0;
-      margin: 0 auto;
     }
-    .orientation-toggle .toggle-btn {
-      padding: 4px 14px;
-      border: none;
-      border-radius: 26px;
-      font-size: 0.55rem;
+    .orientation-indicator .label {
+      font-size: 0.45rem;
       font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      touch-action: manipulation;
-      background: transparent;
-      color: rgba(255,255,255,0.3);
+      color: rgba(255,255,255,0.4);
       letter-spacing: 0.3px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      text-transform: uppercase;
     }
-    .orientation-toggle .toggle-btn:active { transform: scale(0.92); }
-    .orientation-toggle .toggle-btn .icon { font-size: 0.7rem; }
-    .orientation-toggle .toggle-btn.active {
-      background: rgba(255,94,124,0.15);
-      color: #ff8aa3;
-      box-shadow: 0 0 20px rgba(255,94,124,0.05);
+    .orientation-indicator .value {
+      font-size: 0.45rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.7);
+    }
+    .orientation-indicator .dot-active {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      display: inline-block;
+      background: #4ade80;
+      animation: pulse-dot 1.5s infinite;
     }
     
     .camera-controls {
@@ -1113,7 +1135,9 @@
       .suggestion-chip { font-size: 0.45rem; padding: 2px 8px; }
       .suggestion-chip .chip-text { max-width: 60px; }
       .flash-btn { width: 36px; height: 36px; font-size: 1rem; }
-      .orientation-toggle .toggle-btn { padding: 3px 10px; font-size: 0.5rem; }
+      .orientation-indicator { padding: 2px 10px; }
+      .orientation-indicator .label { font-size: 0.4rem; }
+      .orientation-indicator .value { font-size: 0.4rem; }
     }
     @media (max-width: 360px) {
       .overlay-ui { padding: 8px 8px 12px; }
@@ -1138,14 +1162,15 @@
       .thumbnail { width: 38px; height: 38px; }
       .btn-action { font-size: 0.5rem; min-height: 28px; padding: 4px 8px; }
       .status-bar { min-height: 22px; font-size: 0.5rem; padding: 3px 10px; margin-top: 4px; }
-      .orientation-toggle { padding: 2px; }
-      .orientation-toggle .toggle-btn { padding: 2px 10px; font-size: 0.5rem; }
+      .orientation-indicator { padding: 2px 8px; }
+      .orientation-indicator .label { font-size: 0.4rem; }
+      .orientation-indicator .value { font-size: 0.4rem; }
     }
   </style>
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.5.0</span>
+  <span class="version-badge" id="versionBadge">v1.6.0</span>
   
   <div class="camera-container">
     <div class="camera-preview" id="cameraPreview">
@@ -1177,6 +1202,12 @@
         <button class="flash-btn" id="flashBtn" title="Flashlight">
           <span class="icon off">🔦</span>
         </button>
+        <!-- AUTO-ORIENTATION INDICATOR -->
+        <div class="orientation-indicator" id="orientationIndicator">
+          <span class="label">📐 Auto</span>
+          <span class="value" id="orientationValue">—</span>
+          <span class="dot-active" id="orientationDot"></span>
+        </div>
       </div>
       <div class="right-group">
         <button class="install-btn hidden" id="installBtn"><span class="icon">📲</span> Install</button>
@@ -1207,14 +1238,9 @@
         </div>
       </div>
 
-      <!-- ORIENTATION TOGGLE -->
-      <div class="orientation-toggle" id="orientationToggle">
-        <button class="toggle-btn active" id="orientLandscape" data-mode="landscape">
-          <span class="icon">📱</span> Landscape
-        </button>
-        <button class="toggle-btn" id="orientPortrait" data-mode="portrait">
-          <span class="icon">📱</span> Portrait
-        </button>
+      <!-- ORIENTATION INDICATOR (replaces toggle) -->
+      <div style="display: flex; justify-content: center; gap: 12px; align-items: center; flex-shrink: 0;">
+        <span style="font-size: 0.5rem; color: rgba(255,255,255,0.2);">🔄 Auto-orientation active</span>
       </div>
 
       <!-- CAMERA CONTROLS -->
@@ -1304,7 +1330,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.5.0';
+    var APP_VERSION = '1.6.0';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -1323,10 +1349,12 @@
       isVideoRunning: false,
       isInitializing: false,
       isSending: false,
-      orientation: 'landscape',
       flashOn: false,
       flashSupported: false,
-      imageCapture: null
+      imageCapture: null,
+      // Auto-orientation
+      currentPhysicalOrientation: 'portrait', // 'landscape' or 'portrait'
+      orientationListenersStarted: false
     };
 
     // DOM REFS
@@ -1372,9 +1400,9 @@
     var settingsBadge = document.getElementById('settingsBadge');
     var versionBadge = document.getElementById('versionBadge');
     var installBtn = document.getElementById('installBtn');
-    var orientLandscape = document.getElementById('orientLandscape');
-    var orientPortrait = document.getElementById('orientPortrait');
     var flashBtn = document.getElementById('flashBtn');
+    var orientationValue = document.getElementById('orientationValue');
+    var orientationDot = document.getElementById('orientationDot');
 
     // ============================================================
     // VERSION & STORAGE
@@ -1467,6 +1495,83 @@
     }
 
     // ============================================================
+    // AUTO-ORIENTATION – SENSOR DRIVEN
+    // ============================================================
+    function startOrientationListeners() {
+      if (state.orientationListenersStarted) return;
+      state.orientationListenersStarted = true;
+
+      // 1. screen.orientation (fast, but often stale if page is locked)
+      if (screen.orientation) {
+        screen.orientation.addEventListener('change', function() {
+          updateOrientationFromScreen();
+        });
+        updateOrientationFromScreen();
+      }
+
+      // 2. deviceorientation (works even when page is locked to portrait)
+      if (window.DeviceOrientationEvent) {
+        // Request permission on iOS 13+
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+          // iOS 13+ requires user gesture to request permission
+          // We'll request it on first touch
+          document.addEventListener('touchstart', function requestOrientationPermission() {
+            DeviceOrientationEvent.requestPermission()
+              .then(function(state) {
+                if (state === 'granted') {
+                  window.addEventListener('deviceorientation', handleDeviceOrientation);
+                }
+              })
+              .catch(function(err) {
+                console.warn('DeviceOrientation permission error:', err);
+              });
+            document.removeEventListener('touchstart', requestOrientationPermission);
+          }, { once: true });
+        } else {
+          // Android / others – just listen
+          window.addEventListener('deviceorientation', handleDeviceOrientation);
+        }
+      }
+
+      // Initial fallback: assume portrait
+      state.currentPhysicalOrientation = 'portrait';
+      updateOrientationUI('portrait');
+    }
+
+    function updateOrientationFromScreen() {
+      if (!screen.orientation) return;
+      var type = screen.orientation.type;
+      if (type === 'landscape-primary' || type === 'landscape-secondary') {
+        state.currentPhysicalOrientation = 'landscape';
+      } else {
+        state.currentPhysicalOrientation = 'portrait';
+      }
+      updateOrientationUI(state.currentPhysicalOrientation);
+    }
+
+    function handleDeviceOrientation(event) {
+      var gamma = event.gamma; // left-right tilt (degrees)
+      // When phone is held vertically, gamma is near 0
+      // When tilted sideways, gamma is ±90
+      // Use a threshold: |gamma| > 45 => landscape, else portrait
+      if (gamma !== null) {
+        var absGamma = Math.abs(gamma);
+        if (absGamma > 45) {
+          state.currentPhysicalOrientation = 'landscape';
+        } else {
+          state.currentPhysicalOrientation = 'portrait';
+        }
+        updateOrientationUI(state.currentPhysicalOrientation);
+      }
+    }
+
+    function updateOrientationUI(orientation) {
+      var label = orientation === 'landscape' ? '📱 Landscape' : '📱 Portrait';
+      orientationValue.textContent = label;
+      orientationDot.style.display = 'inline-block';
+    }
+
+    // ============================================================
     // FLASHLIGHT
     // ============================================================
     function toggleFlash() {
@@ -1508,20 +1613,6 @@
       }
     }
 
-    // ============================================================
-    // ORIENTATION UI (GUIDE ONLY)
-    // ============================================================
-    function setOrientation(mode) {
-      state.orientation = mode;
-      orientLandscape.classList.toggle('active', mode === 'landscape');
-      orientPortrait.classList.toggle('active', mode === 'portrait');
-      if (mode === 'landscape') {
-        setStatus('📱 Hold phone horizontally', 'info');
-      } else {
-        setStatus('📱 Hold phone vertically', 'info');
-      }
-    }
-    
     // ============================================================
     // CAMERA
     // ============================================================
@@ -1598,6 +1689,9 @@
         state.isInitializing = false;
         renderMainView();
         
+        // Start orientation listeners
+        startOrientationListeners();
+        
         console.log('Video dimensions:', liveVideo.videoWidth, 'x', liveVideo.videoHeight);
       })
       .catch(function(error) {
@@ -1644,16 +1738,6 @@
     });
 
     flashBtn.addEventListener('click', toggleFlash);
-
-    orientLandscape.addEventListener('click', function() {
-      if (state.orientation === 'landscape') return;
-      setOrientation('landscape');
-    });
-
-    orientPortrait.addEventListener('click', function() {
-      if (state.orientation === 'portrait') return;
-      setOrientation('portrait');
-    });
 
     // ============================================================
     // SUGGESTIONS
@@ -2075,8 +2159,39 @@
     }
 
     // ============================================================
-    // CAPTURE – NO FORCED ROTATION
+    // CAPTURE – WITH AUTO-ORIENTATION
     // ============================================================
+    function rotateImageToOrientation(imageBitmap, desiredOrientation) {
+      // desiredOrientation: 'landscape' or 'portrait'
+      var w = imageBitmap.width;
+      var h = imageBitmap.height;
+      var isLandscape = (w > h);
+      var wantLandscape = (desiredOrientation === 'landscape');
+
+      // If already matches, return the image as-is
+      if ((wantLandscape && isLandscape) || (!wantLandscape && !isLandscape)) {
+        return imageBitmap;
+      }
+
+      // Need to rotate 90° (either +90 or -90)
+      // On most Android devices, +90° works for landscape from portrait, and -90° for portrait from landscape.
+      // We'll try +90° first, which matches the majority. If wrong, the user can flip the sign.
+      var canvas = document.createElement('canvas');
+      canvas.width = h;
+      canvas.height = w;
+      var ctx = canvas.getContext('2d');
+      
+      // Use +90° for landscape from portrait, -90° for portrait from landscape
+      var angle = wantLandscape ? Math.PI / 2 : -Math.PI / 2;
+      
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(angle);
+      ctx.drawImage(imageBitmap, -w / 2, -h / 2);
+      
+      // Convert to ImageBitmap for consistency
+      return createImageBitmap(canvas);
+    }
+
     async function capturePhoto() {
       if (!state.cameraReady) {
         startCamera();
@@ -2142,14 +2257,34 @@
           console.log('Fallback canvas used, dimensions:', imageBitmap.width, 'x', imageBitmap.height);
         }
 
-        // No rotation – just save as-is (with EXIF orientation already applied)
+        // Read the physical orientation at capture time
+        var physicalOrientation = state.currentPhysicalOrientation || 'portrait';
+        console.log('Physical orientation at capture:', physicalOrientation);
+
+        // Rotate if needed so that the image aspect matches the physical orientation
+        var finalBitmap = imageBitmap;
+        var w = imageBitmap.width;
+        var h = imageBitmap.height;
+        var isLandscape = (w > h);
+        var wantLandscape = (physicalOrientation === 'landscape');
+
+        if ((wantLandscape && !isLandscape) || (!wantLandscape && isLandscape)) {
+          // Need to rotate
+          finalBitmap = await rotateImageToOrientation(imageBitmap, physicalOrientation);
+          console.log('Rotated to match orientation:', physicalOrientation);
+        } else {
+          console.log('No rotation needed, already matches orientation');
+        }
+
+        // Final save
         var finalCanvas = document.createElement('canvas');
-        finalCanvas.width = imageBitmap.width;
-        finalCanvas.height = imageBitmap.height;
+        finalCanvas.width = finalBitmap.width;
+        finalCanvas.height = finalBitmap.height;
         var ctx = finalCanvas.getContext('2d');
-        ctx.drawImage(imageBitmap, 0, 0);
+        ctx.drawImage(finalBitmap, 0, 0);
         var dataUrl = finalCanvas.toDataURL('image/jpeg', 0.92);
 
+        if (finalBitmap !== imageBitmap) finalBitmap.close();
         if (imageBitmap) imageBitmap.close();
 
         state.photos[slot].dataUrl = dataUrl;
@@ -2386,6 +2521,9 @@
       updateSettingsBadge();
       
       flashBtn.style.display = 'none';
+      
+      // Show orientation indicator as "waiting"
+      orientationValue.textContent = '📱 Waiting...';
       
       setStatus('📷 Starting camera...', 'info');
       
