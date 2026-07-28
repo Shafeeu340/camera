@@ -1145,7 +1145,7 @@
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.4.0</span>
+  <span class="version-badge" id="versionBadge">v1.5.0</span>
   
   <div class="camera-container">
     <div class="camera-preview" id="cameraPreview">
@@ -1304,7 +1304,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.4.0';
+    var APP_VERSION = '1.5.0';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -2075,57 +2075,7 @@
     }
 
     // ============================================================
-    // renderToDataUrl – bakes orientation into pixels
-    // ============================================================
-    function renderToDataUrl(imageBitmap, desiredOrientation) {
-      return new Promise(function(resolve, reject) {
-        try {
-          var imgWidth = imageBitmap.width;
-          var imgHeight = imageBitmap.height;
-          var isLandscape = (imgWidth > imgHeight);
-          var targetLandscape = (desiredOrientation === 'landscape');
-          
-          // If already matches desired orientation, just return as JPEG
-          if ((targetLandscape && isLandscape) || (!targetLandscape && !isLandscape)) {
-            var canvas = document.createElement('canvas');
-            canvas.width = imgWidth;
-            canvas.height = imgHeight;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(imageBitmap, 0, 0);
-            var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-            resolve(dataUrl);
-            return;
-          }
-          
-          // Need to rotate
-          var canvas = document.createElement('canvas');
-          canvas.width = imgHeight;
-          canvas.height = imgWidth;
-          var ctx = canvas.getContext('2d');
-          
-          // Use +90° for landscape from portrait, -90° for portrait from landscape
-          // This matches the orientation of the native camera on most devices.
-          var angle = 0;
-          if (targetLandscape && !isLandscape) {
-            angle = Math.PI / 2;
-          } else if (!targetLandscape && isLandscape) {
-            angle = -Math.PI / 2;
-          }
-          
-          ctx.translate(canvas.width / 2, canvas.height / 2);
-          ctx.rotate(angle);
-          ctx.drawImage(imageBitmap, -imgWidth / 2, -imgHeight / 2);
-          
-          var dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-          resolve(dataUrl);
-        } catch (err) {
-          reject(err);
-        }
-      });
-    }
-
-    // ============================================================
-    // CAPTURE – with ImageCapture and orientation baking
+    // CAPTURE – NO FORCED ROTATION
     // ============================================================
     async function capturePhoto() {
       if (!state.cameraReady) {
@@ -2192,7 +2142,14 @@
           console.log('Fallback canvas used, dimensions:', imageBitmap.width, 'x', imageBitmap.height);
         }
 
-        var dataUrl = await renderToDataUrl(imageBitmap, state.orientation);
+        // No rotation – just save as-is (with EXIF orientation already applied)
+        var finalCanvas = document.createElement('canvas');
+        finalCanvas.width = imageBitmap.width;
+        finalCanvas.height = imageBitmap.height;
+        var ctx = finalCanvas.getContext('2d');
+        ctx.drawImage(imageBitmap, 0, 0);
+        var dataUrl = finalCanvas.toDataURL('image/jpeg', 0.92);
+
         if (imageBitmap) imageBitmap.close();
 
         state.photos[slot].dataUrl = dataUrl;
