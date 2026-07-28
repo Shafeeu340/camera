@@ -16,6 +16,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   
   <style>
+    /* === RESET & BASE === */
     * {
       margin: 0;
       padding: 0;
@@ -55,7 +56,7 @@
       bottom: 8px;
       right: 14px;
       font-size: 0.4rem;
-      color: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.08);
       z-index: 20;
       pointer-events: none;
       letter-spacing: 0.5px;
@@ -198,6 +199,7 @@
       pointer-events: auto;
     }
     
+    /* === TOP BAR === */
     .top-bar {
       display: flex;
       justify-content: space-between;
@@ -342,18 +344,19 @@
     .install-btn.hidden { display: none; }
     .install-btn .icon { font-size: 0.8rem; }
     
+    /* === FLASHLIGHT === */
     .flash-btn {
-      background: rgba(0,0,0,0.3);
-      backdrop-filter: blur(8px);
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      width: 40px;
+      height: 40px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.6);
+      font-size: 1.2rem;
+      color: rgba(255,255,255,0.5);
       cursor: pointer;
       transition: all 0.3s ease;
       touch-action: manipulation;
@@ -363,11 +366,10 @@
     .flash-btn.on {
       color: #facc15;
       border-color: rgba(250,204,21,0.3);
-      background: rgba(250,204,21,0.1);
-      box-shadow: 0 0 20px rgba(250,204,21,0.1);
+      background: rgba(250,204,21,0.12);
+      box-shadow: 0 0 30px rgba(250,204,21,0.08);
     }
-    .flash-btn .icon { font-size: 0.8rem; }
-    .flash-btn .icon.off { opacity: 0.5; }
+    .flash-btn .icon { font-size: 1.2rem; }
     
     .bottom-controls {
       display: flex;
@@ -551,6 +553,44 @@
       padding: 4px 0;
       width: 100%;
       text-align: center;
+    }
+    
+    /* === ORIENTATION TOGGLE === */
+    .orientation-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+      border-radius: 30px;
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 3px;
+      flex-shrink: 0;
+      margin: 0 auto;
+    }
+    .orientation-toggle .toggle-btn {
+      padding: 4px 14px;
+      border: none;
+      border-radius: 26px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+      background: transparent;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .orientation-toggle .toggle-btn:active { transform: scale(0.92); }
+    .orientation-toggle .toggle-btn .icon { font-size: 0.7rem; }
+    .orientation-toggle .toggle-btn.active {
+      background: rgba(255,94,124,0.15);
+      color: #ff8aa3;
+      box-shadow: 0 0 20px rgba(255,94,124,0.05);
     }
     
     .camera-controls {
@@ -737,38 +777,6 @@
       border-radius: 8px;
       white-space: nowrap;
     }
-    
-    .orientation-controls {
-      display: flex;
-      gap: 6px;
-      justify-content: center;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .btn-orientation {
-      padding: 2px 10px;
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 16px;
-      background: rgba(0,0,0,0.3);
-      backdrop-filter: blur(4px);
-      color: rgba(255,255,255,0.3);
-      font-size: 0.5rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      touch-action: manipulation;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .btn-orientation:active { transform: scale(0.92); }
-    .btn-orientation.active {
-      background: rgba(255,94,124,0.1);
-      border-color: rgba(255,94,124,0.2);
-      color: #ff8aa3;
-      box-shadow: 0 0 16px rgba(255,94,124,0.05);
-    }
-    .btn-orientation .icon { font-size: 0.6rem; }
     
     .status-bar {
       background: rgba(0,0,0,0.3);
@@ -1104,6 +1112,8 @@
       .ticket-box input { font-size: 0.7rem; padding: 4px 10px; }
       .suggestion-chip { font-size: 0.45rem; padding: 2px 8px; }
       .suggestion-chip .chip-text { max-width: 60px; }
+      .flash-btn { width: 36px; height: 36px; font-size: 1rem; }
+      .orientation-toggle .toggle-btn { padding: 3px 10px; font-size: 0.5rem; }
     }
     @media (max-width: 360px) {
       .overlay-ui { padding: 8px 8px 12px; }
@@ -1114,6 +1124,7 @@
       .suggestions { max-height: 35px; }
       .suggestion-chip { font-size: 0.4rem; padding: 1px 6px; }
       .suggestion-chip .chip-text { max-width: 40px; }
+      .flash-btn { width: 32px; height: 32px; font-size: 0.9rem; }
     }
     @media (max-height: 700px) {
       .overlay-ui { padding: 8px 10px 12px; }
@@ -1127,14 +1138,14 @@
       .thumbnail { width: 38px; height: 38px; }
       .btn-action { font-size: 0.5rem; min-height: 28px; padding: 4px 8px; }
       .status-bar { min-height: 22px; font-size: 0.5rem; padding: 3px 10px; margin-top: 4px; }
-      .orientation-controls { margin-top: -4px; }
-      .btn-orientation { font-size: 0.45rem; padding: 1px 8px; }
+      .orientation-toggle { padding: 2px; }
+      .orientation-toggle .toggle-btn { padding: 2px 10px; font-size: 0.5rem; }
     }
   </style>
 </head>
 <body>
 <div class="app" id="app">
-  <span class="version-badge" id="versionBadge">v1.2.0</span>
+  <span class="version-badge" id="versionBadge">v1.4.0</span>
   
   <div class="camera-container">
     <div class="camera-preview" id="cameraPreview">
@@ -1156,6 +1167,7 @@
   </div>
   
   <div class="overlay-ui">
+    <!-- TOP BAR -->
     <div class="top-bar">
       <div class="left-group">
         <div class="camera-status">
@@ -1173,7 +1185,9 @@
       </div>
     </div>
 
+    <!-- BOTTOM CONTROLS -->
     <div class="bottom-controls">
+      <!-- TICKET BOX -->
       <div class="ticket-section">
         <div class="ticket-box">
           <div class="label-row">
@@ -1193,15 +1207,17 @@
         </div>
       </div>
 
-      <div class="orientation-controls">
-        <button class="btn-orientation active" id="orientLandscape" data-mode="landscape">
+      <!-- ORIENTATION TOGGLE -->
+      <div class="orientation-toggle" id="orientationToggle">
+        <button class="toggle-btn active" id="orientLandscape" data-mode="landscape">
           <span class="icon">📱</span> Landscape
         </button>
-        <button class="btn-orientation" id="orientPortrait" data-mode="portrait">
+        <button class="toggle-btn" id="orientPortrait" data-mode="portrait">
           <span class="icon">📱</span> Portrait
         </button>
       </div>
 
+      <!-- CAMERA CONTROLS -->
       <div class="camera-controls">
         <button class="btn-action danger" id="retakeBtn" disabled><span class="icon">🔄</span> Retake</button>
         <button class="btn-capture" id="captureBtn">
@@ -1211,6 +1227,7 @@
         <button class="btn-action whatsapp" id="sendBtn" disabled><span class="icon">💬</span> Send</button>
       </div>
 
+      <!-- THUMBNAILS -->
       <div class="thumbnails-row">
         <div class="thumbnail" id="thumb0" data-index="0">
           <span class="thumb-placeholder">📷</span>
@@ -1224,6 +1241,7 @@
         </div>
       </div>
 
+      <!-- STATUS -->
       <div class="status-bar">
         <span class="status-dot gray" id="statusDot"></span>
         <span id="statusText">Initializing camera...</span>
@@ -1286,7 +1304,7 @@
   (function() {
     "use strict";
 
-    var APP_VERSION = '1.2.0';
+    var APP_VERSION = '1.4.0';
     var STORAGE_KEY = 'beddecor_suggestions';
     var VERSION_KEY = 'beddecor_version';
 
@@ -1498,9 +1516,9 @@
       orientLandscape.classList.toggle('active', mode === 'landscape');
       orientPortrait.classList.toggle('active', mode === 'portrait');
       if (mode === 'landscape') {
-        setStatus('📱 Hold phone horizontally for landscape photos', 'info');
+        setStatus('📱 Hold phone horizontally', 'info');
       } else {
-        setStatus('📱 Hold phone vertically for portrait photos', 'info');
+        setStatus('📱 Hold phone vertically', 'info');
       }
     }
     
@@ -1522,8 +1540,8 @@
       navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: 3840 },
+          height: { ideal: 2160 }
         },
         audio: false
       })
@@ -2069,7 +2087,6 @@
           
           // If already matches desired orientation, just return as JPEG
           if ((targetLandscape && isLandscape) || (!targetLandscape && !isLandscape)) {
-            // No rotation needed – just convert to JPEG
             var canvas = document.createElement('canvas');
             canvas.width = imgWidth;
             canvas.height = imgHeight;
@@ -2082,20 +2099,17 @@
           
           // Need to rotate
           var canvas = document.createElement('canvas');
-          // Swap dimensions for 90° rotation
           canvas.width = imgHeight;
           canvas.height = imgWidth;
           var ctx = canvas.getContext('2d');
           
-          // Determine rotation direction
-          // If we want landscape but image is portrait -> rotate 90° clockwise (or counter depending on device)
-          // For most devices, +90 works. We'll try both and let the user flip if needed.
-          // Use +90 for landscape from portrait, -90 for portrait from landscape
+          // Use +90° for landscape from portrait, -90° for portrait from landscape
+          // This matches the orientation of the native camera on most devices.
           var angle = 0;
           if (targetLandscape && !isLandscape) {
-            angle = Math.PI / 2;   // +90°
+            angle = Math.PI / 2;
           } else if (!targetLandscape && isLandscape) {
-            angle = -Math.PI / 2;  // -90°
+            angle = -Math.PI / 2;
           }
           
           ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -2140,39 +2154,33 @@
         var photoBlob = null;
         var imageBitmap = null;
 
-        // Try ImageCapture API for full resolution still
         if (state.imageCapture && typeof state.imageCapture.takePhoto === 'function') {
           try {
-            // Get max photo capabilities to request the best resolution
             var capabilities = await state.imageCapture.getPhotoCapabilities();
             var maxWidth = capabilities.imageWidth ? capabilities.imageWidth.max : 4032;
             var maxHeight = capabilities.imageHeight ? capabilities.imageHeight.max : 3024;
-            // Try with max size
             try {
               photoBlob = await state.imageCapture.takePhoto({
                 imageWidth: maxWidth,
                 imageHeight: maxHeight
               });
+              console.log('ImageCapture success with size:', maxWidth, 'x', maxHeight);
             } catch (sizeErr) {
-              // Fallback: try without options
               console.warn('Sized capture failed, falling back to default', sizeErr);
               photoBlob = await state.imageCapture.takePhoto();
             }
           } catch (capErr) {
-            // Fallback: no capabilities or takePhoto failed
             console.warn('Photo capabilities error, using fallback', capErr);
             photoBlob = await state.imageCapture.takePhoto();
           }
         }
 
-        // If we got a blob from ImageCapture, use it
         if (photoBlob) {
-          // Use createImageBitmap with imageOrientation to apply EXIF
           imageBitmap = await createImageBitmap(photoBlob, {
             imageOrientation: 'from-image'
           });
+          console.log('ImageCapture used, dimensions:', imageBitmap.width, 'x', imageBitmap.height);
         } else {
-          // Fallback: capture from video canvas (no EXIF, but we'll bake orientation)
           var videoWidth = liveVideo.videoWidth;
           var videoHeight = liveVideo.videoHeight;
           var canvas = document.createElement('canvas');
@@ -2180,14 +2188,11 @@
           canvas.height = videoHeight;
           var ctx = canvas.getContext('2d');
           ctx.drawImage(liveVideo, 0, 0);
-          // Convert canvas to ImageBitmap (or just use canvas directly)
           imageBitmap = await createImageBitmap(canvas);
+          console.log('Fallback canvas used, dimensions:', imageBitmap.width, 'x', imageBitmap.height);
         }
 
-        // Bake the correct orientation into pixels
         var dataUrl = await renderToDataUrl(imageBitmap, state.orientation);
-
-        // Clean up bitmap
         if (imageBitmap) imageBitmap.close();
 
         state.photos[slot].dataUrl = dataUrl;
@@ -2244,7 +2249,7 @@
     }
 
     // ============================================================
-    // SEND WHATSAPP
+    // SEND WHATSAPP – No default text
     // ============================================================
     function sendWhatsApp() {
       var photosToSend = [];
@@ -2266,9 +2271,8 @@
       sendBtn.disabled = true;
       setStatus('📤 Preparing ' + photosToSend.length + ' photo(s)...', 'warning');
 
-      var ticket = ticketInput.value || '';
-      var messageText = ticket || 'Bed Decoration Photos';
-      var encodedMsg = encodeURIComponent('🏨 *' + messageText + '*');
+      var ticket = ticketInput.value.trim() || '';
+      var encodedMsg = encodeURIComponent(ticket ? '🏨 *' + ticket + '*' : '');
 
       if (navigator.share) {
         var filePromises = photosToSend.map(function(photo) {
@@ -2286,9 +2290,11 @@
           .then(function(files) {
             var shareData = {
               title: 'Bed Decor',
-              text: messageText,
               files: files
             };
+            if (ticket) {
+              shareData.text = ticket;
+            }
 
             if (navigator.canShare && navigator.canShare(shareData)) {
               navigator.share(shareData)
