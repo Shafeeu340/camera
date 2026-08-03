@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, minimal-ui">
-    <title>BedDecor · Camera</title>
+    <title>BedDecor · Camera Pro</title>
 
     <meta name="theme-color" content="#080b12">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -85,7 +85,7 @@
             background: #000;
         }
 
-        /* === VIDEO WRAPPER (for orientation rotation) === */
+        /* Video wrapper – no rotation, just natural stream */
         .video-wrapper {
             width: 100%;
             height: 100%;
@@ -96,7 +96,6 @@
             justify-content: center;
             overflow: hidden;
             background: #000;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         .video-wrapper video {
             width: 100%;
@@ -104,17 +103,9 @@
             object-fit: contain;
             display: block;
             background: #000;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        /* Landscape rotation: rotate video 90° to match device */
-        .video-wrapper.landscape video {
-            transform: rotate(90deg) scale(1.3);
-        }
-        /* Fallback: if using image preview instead of video */
-        .video-wrapper.landscape img {
-            transform: rotate(90deg) scale(1.3);
         }
 
+        /* Preview image – also no rotation, we rotate only on manual request */
         .camera-preview #mainPreviewImg {
             width: 100%;
             height: 100%;
@@ -122,10 +113,6 @@
             background: #000;
             position: absolute;
             inset: 0;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .camera-preview #mainPreviewImg.landscape {
-            transform: rotate(90deg) scale(1.3);
         }
 
         .camera-preview .placeholder {
@@ -451,32 +438,6 @@
         }
         .flash-btn .icon {
             font-size: 1.2rem;
-        }
-
-        /* === AUTO-ORIENTATION BADGE === */
-        .auto-orientation-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.5rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.4);
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(8px);
-            padding: 3px 10px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .auto-orientation-badge .icon {
-            font-size: 0.6rem;
-        }
-        .auto-orientation-badge .live-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            display: inline-block;
-            background: #4ade80;
-            animation: pulse-dot 1.5s infinite;
         }
 
         .bottom-controls {
@@ -852,8 +813,8 @@
             flex-shrink: 0;
         }
         .thumbnail {
-            width: 50px;
-            height: 50px;
+            width: 56px;
+            height: 56px;
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.03);
             border: 2px solid rgba(255, 255, 255, 0.06);
@@ -914,6 +875,61 @@
             border-radius: 8px;
             white-space: nowrap;
         }
+        .thumbnail .thumb-rotate-btn {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.5rem;
+            color: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            touch-action: manipulation;
+        }
+        .thumbnail .thumb-rotate-btn:active {
+            transform: scale(0.85);
+            color: #facc15;
+        }
+        .thumbnail.has-image .thumb-rotate-btn {
+            display: flex;
+        }
+        .thumbnail .thumb-delete-btn {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.45rem;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            padding: 0;
+            touch-action: manipulation;
+        }
+        .thumbnail .thumb-delete-btn:active {
+            transform: scale(0.85);
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.2);
+        }
+        .thumbnail.has-image .thumb-delete-btn {
+            display: flex;
+        }
 
         .status-bar {
             background: rgba(0, 0, 0, 0.3);
@@ -955,6 +971,18 @@
         }
         .status-bar .status-dot.gray {
             background: rgba(255, 255, 255, 0.1);
+        }
+
+        .photo-counter {
+            font-size: 0.5rem;
+            color: rgba(255, 255, 255, 0.25);
+            text-align: center;
+            padding: 0 4px;
+            letter-spacing: 0.5px;
+        }
+        .photo-counter span {
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.4);
         }
 
         .image-view-modal {
@@ -1051,7 +1079,7 @@
             backdrop-filter: blur(20px);
             border-radius: 32px;
             padding: 24px;
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.06);
             max-height: 80vh;
@@ -1098,19 +1126,99 @@
             color: #f87171;
             background: rgba(248, 113, 113, 0.1);
         }
-        .modal-overlay .modal-content .settings-list {
+
+        /* Settings sections */
+        .settings-section {
+            margin-bottom: 16px;
+        }
+        .settings-section .section-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .settings-section .section-desc {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .settings-radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .settings-radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.2s ease;
+        }
+        .settings-radio-group label:active {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .settings-radio-group input[type="radio"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+            position: relative;
+            transition: all 0.2s ease;
+            margin: 0;
+        }
+        .settings-radio-group input[type="radio"]:checked {
+            border-color: #ff5e7c;
+            background: #ff5e7c;
+        }
+        .settings-radio-group input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #fff;
+        }
+        .settings-radio-group .radio-label {
+            flex: 1;
+        }
+        .settings-radio-group .radio-desc {
+            font-size: 0.55rem;
+            color: rgba(255, 255, 255, 0.3);
+            display: block;
+            margin-top: 1px;
+        }
+
+        .settings-list {
             flex: 1;
             overflow-y: auto;
             padding-right: 4px;
+            margin-top: 4px;
         }
-        .modal-overlay .modal-content .settings-list::-webkit-scrollbar {
+        .settings-list::-webkit-scrollbar {
             width: 3px;
         }
-        .modal-overlay .modal-content .settings-list::-webkit-scrollbar-track {
+        .settings-list::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
         }
-        .modal-overlay .modal-content .settings-list::-webkit-scrollbar-thumb {
+        .settings-list::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
@@ -1271,6 +1379,7 @@
             }
         }
 
+        /* Responsive fine-tune */
         @media (max-width: 420px) {
             .overlay-ui {
                 padding: 10px 10px 14px;
@@ -1284,8 +1393,8 @@
                 height: 48px;
             }
             .thumbnail {
-                width: 44px;
-                height: 44px;
+                width: 48px;
+                height: 48px;
             }
             .btn-action {
                 font-size: 0.55rem;
@@ -1317,6 +1426,15 @@
             .orientation-indicator .value {
                 font-size: 0.4rem;
             }
+            .thumbnail .thumb-rotate-btn,
+            .thumbnail .thumb-delete-btn {
+                width: 16px;
+                height: 16px;
+                font-size: 0.4rem;
+            }
+            .modal-overlay .modal-content {
+                padding: 18px;
+            }
         }
         @media (max-width: 360px) {
             .overlay-ui {
@@ -1331,8 +1449,8 @@
                 height: 42px;
             }
             .thumbnail {
-                width: 38px;
-                height: 38px;
+                width: 42px;
+                height: 42px;
             }
             .btn-action {
                 font-size: 0.5rem;
@@ -1384,8 +1502,8 @@
                 height: 42px;
             }
             .thumbnail {
-                width: 38px;
-                height: 38px;
+                width: 42px;
+                height: 42px;
             }
             .btn-action {
                 font-size: 0.5rem;
@@ -1412,7 +1530,7 @@
 </head>
 <body>
     <div class="app" id="app">
-        <span class="version-badge" id="versionBadge">v1.7.0</span>
+        <span class="version-badge" id="versionBadge">v1.9.4</span>
 
         <div class="camera-container">
             <div class="camera-preview" id="cameraPreview">
@@ -1421,7 +1539,7 @@
                     <span class="main-text">Camera Starting...</span>
                     <span class="sub-text">Please allow camera access</span>
                 </div>
-                <!-- Video wrapper for orientation rotation -->
+                <!-- Video wrapper – no rotation, raw stream -->
                 <div class="video-wrapper" id="videoWrapper">
                     <video id="liveVideo" autoplay playsinline muted webkit-playsinline></video>
                 </div>
@@ -1455,7 +1573,7 @@
                 </div>
                 <div class="right-group">
                     <button class="install-btn hidden" id="installBtn"><span class="icon">📲</span> Install</button>
-                    <button class="settings-btn" id="settingsBtn" title="Manage Suggestions">⚙️<span class="badge-dot" id="settingsBadge"></span></button>
+                    <button class="settings-btn" id="settingsBtn" title="Manage Settings">⚙️<span class="badge-dot" id="settingsBadge"></span></button>
                     <button class="perm-btn-sm" id="permissionBtn"><span class="icon">📷</span><span id="permText">Allow Camera</span></button>
                 </div>
             </div>
@@ -1482,8 +1600,11 @@
                     </div>
                 </div>
 
-                <div style="display: flex; justify-content: center; gap: 12px; align-items: center; flex-shrink: 0;">
-                    <span style="font-size: 0.5rem; color: rgba(255,255,255,0.2);">🔄 Auto-orientation active</span>
+                <!-- Photo counter & rotation hint -->
+                <div class="photo-counter" id="photoCounter">
+                    📸 <span id="photoCountDisplay">0</span> / 2 photos
+                    <span style="margin:0 6px;opacity:0.3;">·</span>
+                    <span style="opacity:0.4;">Tap thumbnail to rotate</span>
                 </div>
 
                 <!-- CAMERA CONTROLS -->
@@ -1502,11 +1623,15 @@
                         <span class="thumb-placeholder">📷</span>
                         <span class="thumb-number">1</span>
                         <span class="thumb-label">Empty</span>
+                        <button class="thumb-rotate-btn" data-index="0" title="Rotate 90°">↻</button>
+                        <button class="thumb-delete-btn" data-index="0" title="Delete">✕</button>
                     </div>
                     <div class="thumbnail" id="thumb1" data-index="1">
                         <span class="thumb-placeholder">📷</span>
                         <span class="thumb-number">2</span>
                         <span class="thumb-label">Empty</span>
+                        <button class="thumb-rotate-btn" data-index="1" title="Rotate 90°">↻</button>
+                        <button class="thumb-delete-btn" data-index="1" title="Delete">✕</button>
                     </div>
                 </div>
 
@@ -1545,10 +1670,35 @@
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>⚙️ Manage Suggestions</h3>
+                <h3>⚙️ Settings</h3>
                 <button class="close-modal" id="closeSettingsBtn">✕</button>
             </div>
-            <div class="settings-list" id="settingsList"></div>
+            <!-- Orientation mode -->
+            <div class="settings-section">
+                <div class="section-title">📸 Photo Orientation</div>
+                <div class="section-desc">Choose how the app handles orientation when saving photos.</div>
+                <div class="settings-radio-group" id="orientationModeGroup">
+                    <label>
+                        <input type="radio" name="orientationMode" value="upright" checked>
+                        <span class="radio-label">
+                            Upright (gravity)
+                            <span class="radio-desc">Always upright – ceiling at top, floor at bottom, no matter how you hold the phone.</span>
+                        </span>
+                    </label>
+                    <label>
+                        <input type="radio" name="orientationMode" value="asis">
+                        <span class="radio-label">
+                            Save as‑is
+                            <span class="radio-desc">No software rotation – preview and saved file always match.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <!-- Suggestions list -->
+            <div class="settings-section" style="flex:1; min-height:0;">
+                <div class="section-title">💡 Suggestions</div>
+                <div class="settings-list" id="settingsList"></div>
+            </div>
             <div class="settings-actions">
                 <button class="btn-delete-selected" id="deleteSelectedBtn" disabled>🗑️ Delete Selected</button>
                 <button class="btn-clear-all" id="clearAllDataBtn">🧹 Clear All Data</button>
@@ -1573,14 +1723,15 @@
         (function() {
             "use strict";
 
-            var APP_VERSION = '1.7.0';
+            var APP_VERSION = '1.9.4';
             var STORAGE_KEY = 'beddecor_suggestions';
             var VERSION_KEY = 'beddecor_version';
+            var ORIENTATION_MODE_KEY = 'beddecor_orientation_mode';
 
             var state = {
                 photos: [
-                    { dataUrl: null },
-                    { dataUrl: null }
+                    { dataUrl: null, rotation: 0 },
+                    { dataUrl: null, rotation: 0 }
                 ],
                 cameraReady: false,
                 selectedIndex: 0,
@@ -1597,8 +1748,8 @@
                 imageCapture: null,
                 currentPhysicalOrientation: 'portrait',
                 orientationListenersStarted: false,
-                // track if we're in landscape for CSS
-                isLandscape: false
+                isLandscape: false,
+                orientationMode: 'upright' // 'upright' or 'asis'
             };
 
             // DOM REFS
@@ -1648,6 +1799,8 @@
             var flashBtn = document.getElementById('flashBtn');
             var orientationValue = document.getElementById('orientationValue');
             var orientationDot = document.getElementById('orientationDot');
+            var photoCountDisplay = document.getElementById('photoCountDisplay');
+            var orientationModeRadios = document.querySelectorAll('input[name="orientationMode"]');
 
             // ============================================================
             // VERSION & STORAGE
@@ -1683,10 +1836,35 @@
                 } catch (e) {}
             }
 
+            function loadOrientationMode() {
+                try {
+                    var mode = localStorage.getItem(ORIENTATION_MODE_KEY);
+                    if (mode === 'upright' || mode === 'asis') {
+                        state.orientationMode = mode;
+                    } else {
+                        state.orientationMode = 'upright';
+                        localStorage.setItem(ORIENTATION_MODE_KEY, 'upright');
+                    }
+                } catch (e) {
+                    state.orientationMode = 'upright';
+                }
+                document.querySelectorAll('input[name="orientationMode"]').forEach(function(radio) {
+                    radio.checked = (radio.value === state.orientationMode);
+                });
+            }
+
+            function saveOrientationMode(mode) {
+                try {
+                    localStorage.setItem(ORIENTATION_MODE_KEY, mode);
+                    state.orientationMode = mode;
+                } catch (e) {}
+            }
+
             function clearAllData() {
                 try {
                     localStorage.removeItem(STORAGE_KEY);
                     localStorage.setItem(VERSION_KEY, APP_VERSION);
+                    localStorage.setItem(ORIENTATION_MODE_KEY, 'upright');
                     state.suggestions = [];
                     state.selectedSuggestions = [];
                     ticketInput.value = '';
@@ -1695,6 +1873,7 @@
                     renderSettings();
                     setStatus('🧹 All data cleared!', 'info');
                     updateSettingsBadge();
+                    loadOrientationMode();
                 } catch (e) {}
             }
 
@@ -1733,6 +1912,12 @@
                 captureBtn.classList.toggle('has-photos', hasPhotos);
                 retakeBtn.disabled = !hasPhotos || !state.cameraReady;
                 sendBtn.disabled = !hasPhotos || !state.cameraReady || state.isSending;
+                updatePhotoCounter();
+            }
+
+            function updatePhotoCounter() {
+                var count = state.photos.filter(function(p) { return p.dataUrl; }).length;
+                photoCountDisplay.textContent = count;
             }
 
             function updateCharCount() {
@@ -1740,7 +1925,7 @@
             }
 
             // ============================================================
-            // ORIENTATION – improved with CSS rotation
+            // ORIENTATION – UI label only, no CSS transform
             // ============================================================
             function updateOrientationUI(orientation) {
                 var isLandscape = (orientation === 'landscape');
@@ -1748,21 +1933,13 @@
                 var label = isLandscape ? '🌅 Landscape' : '📱 Portrait';
                 orientationValue.textContent = label;
                 orientationDot.style.display = 'inline-block';
-
-                // Apply CSS class to video wrapper and preview image
-                if (videoWrapper) {
-                    videoWrapper.classList.toggle('landscape', isLandscape);
-                }
-                if (mainPreviewImg) {
-                    mainPreviewImg.classList.toggle('landscape', isLandscape);
-                }
+                // No CSS transforms applied to video or preview
             }
 
             function startOrientationListeners() {
                 if (state.orientationListenersStarted) return;
                 state.orientationListenersStarted = true;
 
-                // 1. screen.orientation (most reliable)
                 if (screen.orientation) {
                     screen.orientation.addEventListener('change', function() {
                         updateOrientationFromScreen();
@@ -1770,7 +1947,6 @@
                     updateOrientationFromScreen();
                 }
 
-                // 2. deviceorientation (fallback)
                 if (window.DeviceOrientationEvent) {
                     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                         document.addEventListener('touchstart', function requestOrientationPermission() {
@@ -1820,7 +1996,7 @@
                 }
                 var capabilities = state.videoTrack.getCapabilities ? state.videoTrack.getCapabilities() : null;
                 if (!capabilities || !capabilities.torch) {
-                    setStatus('⚠️ Flash not available on this device', 'error');
+                    setStatus('⚠️ Flash not available', 'error');
                     return;
                 }
                 state.flashOn = !state.flashOn;
@@ -2174,10 +2350,23 @@
             // ============================================================
             // EVENTS
             // ============================================================
+            orientationModeRadios.forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        saveOrientationMode(this.value);
+                        setStatus('📸 Orientation mode: ' + (this.value === 'upright' ? 'Upright (gravity)' :
+                            'Save as‑is'), 'info');
+                    }
+                });
+            });
+
             settingsBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 state.editingIndex = -1;
                 renderSettings();
+                document.querySelectorAll('input[name="orientationMode"]').forEach(function(radio) {
+                    radio.checked = (radio.value === state.orientationMode);
+                });
                 settingsModal.classList.add('active');
                 this.classList.add('active');
             });
@@ -2227,6 +2416,9 @@
                 clearAllData();
                 clearDataModal.classList.remove('active');
                 renderSettings();
+                document.querySelectorAll('input[name="orientationMode"]').forEach(function(radio) {
+                    radio.checked = (radio.value === state.orientationMode);
+                });
             });
             settingsModal.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -2309,15 +2501,12 @@
                     videoWrapper.style.display = 'none';
                     mainPreviewImg.src = photo.dataUrl;
                     mainPreviewImg.style.display = 'block';
-                    // Apply orientation class to the preview image too
-                    mainPreviewImg.classList.toggle('landscape', state.isLandscape);
                     mainPlaceholder.style.display = 'none';
                 } else if (state.isVideoRunning) {
                     liveVideo.style.display = 'block';
                     videoWrapper.style.display = 'flex';
                     mainPreviewImg.style.display = 'none';
                     mainPlaceholder.style.display = 'none';
-                    videoWrapper.classList.toggle('landscape', state.isLandscape);
                 } else {
                     liveVideo.style.display = 'none';
                     videoWrapper.style.display = 'none';
@@ -2335,6 +2524,7 @@
                     var existingImg = thumb.querySelector('img');
                     var placeholder = thumb.querySelector('.thumb-placeholder');
                     var label = thumb.querySelector('.thumb-label');
+
                     if (photo.dataUrl) {
                         if (!existingImg) {
                             var img = document.createElement('img');
@@ -2355,31 +2545,121 @@
                         thumb.classList.remove('has-image');
                     }
                     thumb.classList.toggle('active', i === state.selectedIndex);
+
+                    var rotBtn = thumb.querySelector('.thumb-rotate-btn');
+                    var delBtn = thumb.querySelector('.thumb-delete-btn');
+                    if (rotBtn) {
+                        rotBtn.style.display = photo.dataUrl ? 'flex' : 'none';
+                        rotBtn.dataset.index = i;
+                    }
+                    if (delBtn) {
+                        delBtn.style.display = photo.dataUrl ? 'flex' : 'none';
+                        delBtn.dataset.index = i;
+                    }
                 }
             }
 
             // ============================================================
-            // CAPTURE – with orientation handling
+            // ROTATE IMAGE (manual)
             // ============================================================
-            function rotateImageToOrientation(imageBitmap, desiredOrientation) {
-                var w = imageBitmap.width;
-                var h = imageBitmap.height;
-                var isLandscape = (w > h);
-                var wantLandscape = (desiredOrientation === 'landscape');
-                if ((wantLandscape && isLandscape) || (!wantLandscape && !isLandscape)) {
-                    return imageBitmap;
-                }
-                var canvas = document.createElement('canvas');
-                canvas.width = h;
-                canvas.height = w;
-                var ctx = canvas.getContext('2d');
-                var angle = wantLandscape ? Math.PI / 2 : -Math.PI / 2;
-                ctx.translate(canvas.width / 2, canvas.height / 2);
-                ctx.rotate(angle);
-                ctx.drawImage(imageBitmap, -w / 2, -h / 2);
-                return createImageBitmap(canvas);
+            function rotatePhoto(index, degrees) {
+                var photo = state.photos[index];
+                if (!photo.dataUrl) return;
+
+                var img = new Image();
+                img.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    var w = img.width;
+                    var h = img.height;
+                    var angle = (degrees || 90) * Math.PI / 180;
+                    var isEven = (Math.floor((degrees || 90) / 90) % 2 === 0);
+                    canvas.width = isEven ? w : h;
+                    canvas.height = isEven ? h : w;
+                    var ctx = canvas.getContext('2d');
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate(angle);
+                    ctx.drawImage(img, -w / 2, -h / 2);
+                    var newDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+                    state.photos[index].dataUrl = newDataUrl;
+                    state.photos[index].rotation = (state.photos[index].rotation || 0) + (degrees || 90);
+                    renderMainView();
+                    setStatus('🔄 Photo ' + (index + 1) + ' rotated', 'success');
+                    if (imageViewModal.classList.contains('active')) {
+                        imageViewImg.src = newDataUrl;
+                    }
+                };
+                img.src = photo.dataUrl;
             }
 
+            // ============================================================
+            // DELETE PHOTO
+            // ============================================================
+            function deletePhoto(index) {
+                if (!state.photos[index].dataUrl) return;
+                state.photos[index].dataUrl = null;
+                state.photos[index].rotation = 0;
+                if (state.selectedIndex === index) {
+                    var found = false;
+                    for (var i = 0; i < 2; i++) {
+                        if (i !== index && state.photos[i].dataUrl) {
+                            state.selectedIndex = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        state.selectedIndex = 0;
+                    }
+                }
+                renderMainView();
+                setStatus('🗑️ Photo ' + (index + 1) + ' deleted', 'info');
+                if (imageViewModal.classList.contains('active')) {
+                    imageViewModal.classList.remove('active');
+                }
+            }
+
+            // ============================================================
+            // ROTATE BITMAP helpers
+            // ============================================================
+            function rotateBitmap(bitmap, angleRad) {
+                return new Promise(function(resolve) {
+                    var w = bitmap.width;
+                    var h = bitmap.height;
+                    var cos = Math.abs(Math.cos(angleRad));
+                    var sin = Math.abs(Math.sin(angleRad));
+                    var newW = Math.round(w * cos + h * sin);
+                    var newH = Math.round(w * sin + h * cos);
+                    var canvas = document.createElement('canvas');
+                    canvas.width = newW;
+                    canvas.height = newH;
+                    var ctx = canvas.getContext('2d');
+                    ctx.translate(newW / 2, newH / 2);
+                    ctx.rotate(angleRad);
+                    ctx.drawImage(bitmap, -w / 2, -h / 2);
+                    createImageBitmap(canvas).then(resolve);
+                });
+            }
+
+            // ============================================================
+            // GET DEVICE ROTATION ANGLE (for gravity upright)
+            // ============================================================
+            function getDeviceRotationAngle() {
+                // Returns the angle in degrees (0, 90, 180, 270) clockwise from natural portrait.
+                // If screen.orientation is available, use it.
+                if (screen.orientation && typeof screen.orientation.angle === 'number') {
+                    return screen.orientation.angle;
+                }
+                // Fallback: try to use window.orientation (deprecated but still works on some devices)
+                if (typeof window.orientation === 'number') {
+                    return window.orientation; // usually -90, 0, 90, 180
+                }
+                // If no orientation API, assume portrait
+                return 0;
+            }
+
+            // ============================================================
+            // CAPTURE – with gravity upright mode
+            // ============================================================
             async function capturePhoto() {
                 if (!state.cameraReady) {
                     startCamera();
@@ -2444,22 +2724,25 @@
                         console.log('Fallback canvas used, dimensions:', imageBitmap.width, 'x', imageBitmap.height);
                     }
 
-                    var physicalOrientation = state.currentPhysicalOrientation || 'portrait';
-                    console.log('Physical orientation at capture:', physicalOrientation);
-
+                    // --- Orientation handling ---
                     var finalBitmap = imageBitmap;
-                    var w = imageBitmap.width;
-                    var h = imageBitmap.height;
-                    var isLandscape = (w > h);
-                    var wantLandscape = (physicalOrientation === 'landscape');
-
-                    if ((wantLandscape && !isLandscape) || (!wantLandscape && isLandscape)) {
-                        finalBitmap = await rotateImageToOrientation(imageBitmap, physicalOrientation);
-                        console.log('Rotated to match orientation:', physicalOrientation);
+                    if (state.orientationMode === 'upright') {
+                        var angle = getDeviceRotationAngle();
+                        // Rotate the image so that "up" in the image aligns with physical up.
+                        // The device rotation angle is clockwise from natural portrait.
+                        // We need to rotate counter-clockwise by that angle.
+                        if (angle !== 0) {
+                            var rad = -angle * Math.PI / 180;
+                            finalBitmap = await rotateBitmap(imageBitmap, rad);
+                            console.log('Upright: applied rotation of ' + (-angle) + '° to correct gravity.');
+                        } else {
+                            console.log('Upright: no rotation needed (device upright).');
+                        }
                     } else {
-                        console.log('No rotation needed, already matches orientation');
+                        console.log('Save as‑is: no rotation applied.');
                     }
 
+                    // Save the final bitmap
                     var finalCanvas = document.createElement('canvas');
                     finalCanvas.width = finalBitmap.width;
                     finalCanvas.height = finalBitmap.height;
@@ -2471,6 +2754,7 @@
                     if (imageBitmap) imageBitmap.close();
 
                     state.photos[slot].dataUrl = dataUrl;
+                    state.photos[slot].rotation = 0;
                     state.selectedIndex = slot;
 
                     renderMainView();
@@ -2480,11 +2764,12 @@
 
                     setStatus('✅ Photo ' + (slot + 1) + ' saved!', 'success');
 
+                    if (navigator.vibrate) navigator.vibrate(30);
+
                     setTimeout(() => {
                         if (state.isVideoRunning) {
                             liveVideo.style.display = 'block';
                             videoWrapper.style.display = 'flex';
-                            videoWrapper.classList.toggle('landscape', state.isLandscape);
                             mainPreviewImg.style.display = 'none';
                             mainPlaceholder.style.display = 'none';
                         }
@@ -2516,19 +2801,20 @@
                     return;
                 }
                 state.photos[slot].dataUrl = null;
+                state.photos[slot].rotation = 0;
                 renderMainView();
                 if (state.isVideoRunning) {
                     liveVideo.style.display = 'block';
                     videoWrapper.style.display = 'flex';
-                    videoWrapper.classList.toggle('landscape', state.isLandscape);
                     mainPreviewImg.style.display = 'none';
                     mainPlaceholder.style.display = 'none';
                 }
                 setStatus('🔄 Photo ' + (slot + 1) + ' removed', 'info');
+                if (navigator.vibrate) navigator.vibrate(20);
             }
 
             // ============================================================
-            // SEND WHATSAPP – fixed with better sharing
+            // SEND WHATSAPP – unchanged
             // ============================================================
             function sendWhatsApp() {
                 var photosToSend = [];
@@ -2551,11 +2837,8 @@
                 setStatus('📤 Preparing ' + photosToSend.length + ' photo(s)...', 'warning');
 
                 var ticket = ticketInput.value.trim() || '';
-
-                // Build a descriptive text
                 var shareText = ticket ? '🏨 ' + ticket : '🏨 Bed Decor';
 
-                // Try Web Share API first (works on mobile browsers)
                 if (navigator.share) {
                     var filePromises = photosToSend.map(function(photo) {
                         return fetch(photo.dataUrl)
@@ -2586,7 +2869,7 @@
                                     })
                                     .catch(function(err) {
                                         if (err.name !== 'AbortError') {
-                                            console.warn('Share cancelled or failed:', err);
+                                            console.warn('Share failed:', err);
                                             fallbackWhatsApp();
                                         } else {
                                             state.isSending = false;
@@ -2596,7 +2879,6 @@
                                         }
                                     });
                             } else {
-                                // canShare says false – fallback
                                 fallbackWhatsApp();
                             }
                         })
@@ -2605,30 +2887,20 @@
                             fallbackWhatsApp();
                         });
                 } else {
-                    // No Web Share API – fallback
                     fallbackWhatsApp();
                 }
 
                 function fallbackWhatsApp() {
-                    // Build WhatsApp URL with text only – user attaches photos manually
                     var encodedMsg = encodeURIComponent(shareText);
                     var url = 'https://api.whatsapp.com/send?text=' + encodedMsg;
-                    // Also try to use the more direct wa.me link
-                    var waMeUrl = 'https://wa.me/?text=' + encodedMsg;
-
-                    // Open WhatsApp in a new window/tab
                     var win = window.open(url, '_blank');
                     if (!win || win.closed || typeof win.closed === 'undefined') {
-                        // Popup blocked – try the other URL
-                        window.open(waMeUrl, '_blank');
+                        window.open('https://wa.me/?text=' + encodedMsg, '_blank');
                     }
-
-                    setStatus('📤 WhatsApp opened – attach your photos manually', 'info');
+                    setStatus('📤 WhatsApp opened – attach your photos', 'info');
                     state.isSending = false;
                     sendBtn.disabled = false;
                     updateButtons();
-
-                    // Show a helpful message
                     setTimeout(function() {
                         setStatus('💡 After attaching photos, paste your message', 'info');
                     }, 2000);
@@ -2636,14 +2908,15 @@
             }
 
             // ============================================================
-            // THUMBNAILS
+            // THUMBNAIL EVENTS
             // ============================================================
             thumbnails.forEach(function(thumb, idx) {
                 thumb.addEventListener('click', function(e) {
+                    if (e.target.closest('.thumb-rotate-btn') || e.target.closest('.thumb-delete-btn')) return;
                     e.preventDefault();
                     if (state.photos[idx].dataUrl) {
                         imageViewImg.src = state.photos[idx].dataUrl;
-                        photoInfo.textContent = '📸 Photo ' + (idx + 1);
+                        photoInfo.textContent = '📸 Photo ' + (idx + 1) + ' (tap to close)';
                         imageViewModal.classList.add('active');
                     } else {
                         state.selectedIndex = idx;
@@ -2651,8 +2924,33 @@
                         setStatus('📸 Slot ' + (idx + 1) + ' selected', 'info');
                     }
                 });
+
+                var rotBtn = thumb.querySelector('.thumb-rotate-btn');
+                if (rotBtn) {
+                    rotBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var index = parseInt(this.dataset.index);
+                        rotatePhoto(index, 90);
+                    });
+                }
+
+                var delBtn = thumb.querySelector('.thumb-delete-btn');
+                if (delBtn) {
+                    delBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var index = parseInt(this.dataset.index);
+                        if (state.photos[index].dataUrl) {
+                            if (confirm('Delete photo ' + (index + 1) + '?')) {
+                                deletePhoto(index);
+                            }
+                        }
+                    });
+                }
             });
 
+            // ============================================================
+            // FULLSCREEN IMAGE VIEW
+            // ============================================================
             imageViewClose.addEventListener('click', function(e) {
                 e.preventDefault();
                 imageViewModal.classList.remove('active');
@@ -2714,11 +3012,48 @@
             document.addEventListener('touchstart', touchHandler, { once: true, passive: true });
 
             // ============================================================
+            // KEYBOARD SHORTCUTS
+            // ============================================================
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                    var active = document.activeElement;
+                    if (active && active.tagName === 'INPUT') {
+                        if (active.id === 'newSuggestionInput') {
+                            addSuggestion(active.value);
+                            e.preventDefault();
+                        }
+                    }
+                }
+                if (e.key === 'Escape') {
+                    if (imageViewModal.classList.contains('active')) {
+                        imageViewModal.classList.remove('active');
+                    }
+                    if (settingsModal.classList.contains('active')) {
+                        settingsModal.classList.remove('active');
+                        settingsBtn.classList.remove('active');
+                    }
+                    if (addModal.classList.contains('active')) {
+                        addModal.classList.remove('active');
+                    }
+                    if (clearDataModal.classList.contains('active')) {
+                        clearDataModal.classList.remove('active');
+                    }
+                }
+                if (e.key === ' ' || e.key === 'Space') {
+                    if (!e.repeat && !e.shiftKey) {
+                        capturePhoto();
+                        e.preventDefault();
+                    }
+                }
+            });
+
+            // ============================================================
             // INIT
             // ============================================================
             function init() {
                 checkVersion();
                 loadSuggestions();
+                loadOrientationMode();
                 renderSuggestions();
                 renderMainView();
                 updateCharCount();
